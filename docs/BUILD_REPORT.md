@@ -27,6 +27,17 @@
 - Ponowny lint OK. Build i Vitest: wyniki M0; nowe SQL nie jest nimi walidowane.
 - Nie ma oczekujących pytań blokujących M2–M3.
 
+## M2
+
+- Skopiowano `date.ts`, `srs.ts`, `session.ts` z BridgeLoop; kolejka filtruje aktywne
+  karty i przyjmuje zbiór wcześniej próbowanych kart.
+- Dodano normalizację, klucze, wyświetlanie, dopasowanie i indeks wyszukiwania w `src/lib/auction/`.
+- Dodano czyste funkcje stanów sesji, bufora i swobodnych powtórek (`sessionState.ts`).
+- Timer, ścisłe ocenianie, statystyki wierszy oraz skutki zmian treści są testowane osobno.
+- Vitest: 103/103, w tym odpowiednik każdego wiersza tabeli §5.1 na wymyślonych danych.
+- Test indeksu 1000 kart przechodzi limit 50 ms na tym komputerze; telefon wymaga późniejszej kontroli.
+- Hooki UI i zapis sieciowy pozostają w M4 zgodnie z zakresem. M4 nie rozpoczęto.
+
 ## Dodatkowe problemy środowiska
 
 - Pierwszy zapis indeksu Git: `Unable to create .git/index.lock: Permission denied`.
