@@ -285,6 +285,8 @@ Copy BridgeLoop `src/lib/session.ts` and `src/hooks/useDailySession.ts`, replaci
 
 ### 6.7 Effect of content changes on progress
 
+Owner clarification (2026-09-16): database-triggered “tomorrow” uses **Europe/Warsaw** for the group.
+
 - **Substantive** change to a card (from an import run or the admin editor): set `changedIn` / `changedAt` on changed and added lines; for every `srs_progress` row of that card with status ≠ NEW and `next_review_date` later than tomorrow → set `next_review_date = tomorrow` (step unchanged).
 - Highlight rule: a line shows **zmiana w …** when `changedAt > srs_progress.last_seen` at the moment the card is loaded.
 - **Cosmetic** change: text updated only; no highlight, no schedule change.
@@ -317,6 +319,8 @@ Per category: prose sections in PDF order (title + body, line breaks kept). Read
 Section 8.
 
 ### 7.6 Trudne odzywki
+
+Owner clarification (2026-09-16): attempts also store `present_line_keys text[]`, the keys present at grading, so only appearances while a line existed are counted.
 - A line is **trudna** when it was missed in at least 2 of its last 5 graded appearances. An appearance is an attempt of its card with `missed_line_keys` not null, made while the line existed.
 - Sorted by misses in the last 5 (descending), then by most recent miss. Row: call label, compact auction, category, `2/5`, date of last miss.
 - Tap → free practice of that card; after reveal the line is outlined as trudna.
