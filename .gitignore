@@ -1,0 +1,15 @@
+sys files/
+data/
+.env*
+!.env.example
+!.env.import.example
+tools/importer/.venv/
+node_modules/
+dist/
+coverage/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.tsbuildinfo
+.DS_Store
+*.log
