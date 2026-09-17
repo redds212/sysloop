@@ -275,6 +275,7 @@ Copy BridgeLoop `src/lib/session.ts` and `src/hooks/useDailySession.ts`, replaci
 - Main pass: pass → apply to SRS immediately; fail → record the attempt, push the card to the buffer (no SRS write yet).
 - Buffer pass (after the main pass): every missed card once more; whatever the result → `LEARNING`, due tomorrow, counter 0; failed again → `flag_difficult = true`.
 - Snapshot in `daily_sessions` so the session resumes after reload or on another device; it expires at local midnight; a target/mode change mid-day adapts the queue; archived cards are skipped.
+- Owner clarification (2026-09-17): unfinished main-pass misses at midnight become `LEARNING`, step 0, due the day after the original answer. Recover these before generating the next day's queue; do not override a later free-practice or buffer rating.
 - Progress bar `7 / 20`; label **Poprawki** during the buffer pass; completion summary at the end.
 
 ### 6.6 Free practice (sidebar, search, read mode, Trudne odzywki)

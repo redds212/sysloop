@@ -1,4 +1,7 @@
 export type Side = 'we' | 'they'
+export type Suit = 'S' | 'H' | 'D' | 'C'
+export interface AppUser { id: string; email: string; username: string; isAdmin: boolean; status: 'pending' | 'approved'; dailyTarget: number; mode: LearningMode; timedMode: boolean }
+export interface Category { slug: string; name: string; group: string; sortOrder: number; sourceFile: string; revision: string; notes: { title: string; body: string }[] }
 export type CallToken = string
 export interface AuctionCall { side: Side; alts: CallToken[]; implicit?: true; qualifier?: string }
 export interface CardLine {

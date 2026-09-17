@@ -7,7 +7,7 @@ export default {
       colors: { brand: {
         bg: '#0b1220', panel: '#131c2e', soft: '#1b2740', line: 'rgba(255,255,255,.09)',
         text: '#e8edf5', dim: '#8a97ad', accent: '#10b981', 'accent-soft': '#34d399',
-        'accent-2': '#fbbf24', danger: '#e0524d',
+        'accent-2': '#fbbf24', danger: '#e0524d', 'btn-text': '#08251c',
       } },
       fontFamily: {
         display: ['"Space Grotesk"', 'sans-serif'],

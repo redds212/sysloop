@@ -23,5 +23,5 @@ export default defineConfig({
     devOptions: { enabled: false },
   })],
   server: { port: 5175, strictPort: true },
-  test: { include: ['src/**/*.test.ts'], environment: 'node' },
+  test: { include: ['src/**/*.test.{ts,tsx}'], environment: 'node' },
 })
