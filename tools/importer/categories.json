@@ -1,0 +1,16 @@
+[
+  {"prefix":"OTW_1T","slug":"otw-1t","name":"Otwarcie 1♣","group":"Otwarcia"},
+  {"prefix":"OTW_1K","slug":"otw-1k","name":"Otwarcie 1♦","group":"Otwarcia"},
+  {"prefix":"OTW_1H","slug":"otw-1h","name":"Otwarcie 1♥","group":"Otwarcia"},
+  {"prefix":"OTW_1S","slug":"otw-1s","name":"Otwarcie 1♠","group":"Otwarcia"},
+  {"prefix":"OTW_1N","slug":"otw-1n","name":"Otwarcie 1NT","group":"Otwarcia"},
+  {"prefix":"OTW_2T","slug":"otw-2t","name":"Otwarcie 2♣","group":"Otwarcia"},
+  {"prefix":"OTW_2M","slug":"otw-2m","name":"Otwarcie 2♥ i 2♠","group":"Otwarcia"},
+  {"prefix":"OTW_2NT","slug":"otw-2nt","name":"Otwarcie 2NT","group":"Otwarcia"},
+  {"prefix":"OTW_3_plus","slug":"otw-3plus","name":"Otwarcia 3♣ i wyżej","group":"Otwarcia"},
+  {"prefix":"OBR_1T","slug":"obr-1t","name":"Obrona przeciwko 1♣","group":"Obrona"},
+  {"prefix":"OBR_1D","slug":"obr-1d","name":"Obrona przeciwko 1♦","group":"Obrona"},
+  {"prefix":"OBR_W_2kol","slug":"obr-w-2kol","name":"Wejścia dwukolorowe","group":"Obrona"},
+  {"prefix":"OBR_W_2NT po blokach","slug":"obr-w-2nt-bloki","name":"Wejście 2NT po otwarciach blokujących","group":"Obrona"},
+  {"prefix":"OBR_inne","slug":"obr-inne","name":"Obrona – różne","group":"Obrona"}
+]
