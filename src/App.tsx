@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { AuthCard } from './auth/AuthCard'
 import { LoginPage } from './auth/LoginPage'
@@ -9,13 +9,18 @@ import { createRepository } from './lib/supabaseRepository'
 import { browserJournal } from './lib/learningRepository'
 import LearningApp from './LearningApp'
 import type { AppUser } from './types'
+import { createAdminRepository } from './admin/repository'
 
 const Preview = import.meta.env.DEV ? lazy(()=>import('./dev/Preview')) : null
+const AdminPanel = lazy(()=>import('./admin/AdminPanel').then(module=>({default:module.AdminPanel})))
 function ApprovedApp({user,onLogout}:{user:AppUser;onLogout:()=>void}) {
   const {id,username}=user
   const repository=useMemo(()=>createRepository({id,username}),[id,username])
   const journal=useMemo(()=>browserJournal({id},localStorage),[id])
-  return <LearningApp user={user} repository={repository} journal={journal} onLogout={onLogout} account={<ChangePasswordCard/>}/>
+  const adminRepository=useMemo(()=>createAdminRepository(id),[id])
+  const [admin,setAdmin]=useState(false)
+  if(admin&&user.isAdmin)return <Suspense fallback={<p className="loading-page">Wczytywanie panelu…</p>}><AdminPanel user={user} repository={adminRepository} onBack={()=>setAdmin(false)}/></Suspense>
+  return <LearningApp user={user} repository={repository} journal={journal} onLogout={onLogout} onAdmin={()=>setAdmin(true)} account={<ChangePasswordCard/>}/>
 }
 function AuthGate() {
   const {user,loading,offline,recovery,logout,refreshProfile}=useAuth()

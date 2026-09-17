@@ -12,7 +12,7 @@ import { LearningSettings } from './components/LearningSettings'
 import { Modal } from './components/Modal'
 
 type View={kind:'home'|'session'|'settings'}|{kind:'practice'|'read'|'notes';id:string;visit:number}
-export default function LearningApp({user,repository,journal,onLogout,account,preview=false}: {user:AppUser;repository:LearningRepository;journal:Journal;onLogout:()=>void;account?:ReactNode;preview?:boolean}) {
+export default function LearningApp({user,repository,journal,onLogout,onAdmin,account,preview=false}: {user:AppUser;repository:LearningRepository;journal:Journal;onLogout:()=>void;onAdmin?:()=>void;account?:ReactNode;preview?:boolean}) {
   const learning=useLearning(user,repository,journal)
   const [view,setView]=useState<View>({kind:'home'}),[drawer,setDrawer]=useState(false),[front,setFront]=useState(false)
   const revealed=useCallback(()=>setFront(false),[])
@@ -27,7 +27,7 @@ export default function LearningApp({user,repository,journal,onLogout,account,pr
   const completed=!!session&&!currentId
   const resumeLabel=session?.inBuffer?`Wznów poprawki (${session.bufferIndex} / ${session.buffer.length})`:`Wznów sesję (${session?.index??0} / ${session?.session.slots.length??0})`
   async function start() {if(busy||learning.error)return;try{await learning.begin();setView({kind:'session'});setDrawer(false);setFront(true)}catch{/* The hook displays the write error. */}}
-  const sidebar=<Sidebar user={user} cards={data.cards} categories={data.categories} store={data.store} recommended={remaining} locked={front} onPractice={id=>open('practice',id)} onRead={id=>open('read',id)} onNotes={id=>open('notes',id)} onHome={()=>navigate({kind:'home'})} onSettings={()=>navigate({kind:'settings'})} onLogout={onLogout}/>
+  const sidebar=<Sidebar user={user} cards={data.cards} categories={data.categories} store={data.store} recommended={remaining} locked={front} onPractice={id=>open('practice',id)} onRead={id=>open('read',id)} onNotes={id=>open('notes',id)} onHome={()=>navigate({kind:'home'})} onSettings={()=>navigate({kind:'settings'})} onLogout={onLogout} onAdmin={onAdmin?()=>{if(!learning.busy&&!learning.error)onAdmin()}:undefined}/>
   return <div className="app-shell"><aside className="desktop-sidebar">{sidebar}</aside><div className="app-body">
     <header className="topbar"><button className="icon-button mobile-menu" onClick={()=>setDrawer(true)} aria-label="Otwórz menu">☰</button><span className="topbar-label">{view.kind==='session'?'Codzienna praktyka':view.kind==='practice'?'Ćwiczenie swobodne':view.kind==='read'?'Biblioteka':'Twój system'}</span><span className="today-label">{new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'long'})}</span></header>
     {preview&&<div className="preview-banner">Podgląd · wymyślone karty · zapis tylko w tej przeglądarce</div>}
