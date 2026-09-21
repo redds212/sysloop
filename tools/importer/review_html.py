@@ -3,7 +3,7 @@ from html import escape
 from pathlib import Path
 
 
-def write_review(result, root):
+def write_review(result, root, *, verified=False):
     category = result['category']; slug = category['slug']
     pages = []
     for page in range(1,result['stats']['pages']+1):
@@ -12,11 +12,12 @@ def write_review(result, root):
             if card['sourcePage'] != page:
                 continue
             rows = ''.join(f'<tr><th>{escape(line["label"])}</th><td>{escape(line["meaning"])}</td></tr>' for line in card['lines'])
-            flags = ' · '.join(card['reviewFlags']) or 'Brak flag — wymaga weryfikacji'
+            flags = ' · '.join(card['reviewFlags']) or ('Sprawdzono z PDF' if verified else 'Brak flag — wymaga weryfikacji')
             cards.append(f'<article id="card-{card["sortOrder"]}"><small>#{card["sortOrder"]+1} · {escape(flags)}</small>'
                 f'<h3>{escape(card["auctionKey"] or "Nieustalona sekwencja")}</h3><p>{escape(card.get("context",""))}</p>'
                 f'<p>{escape(card["section"])}</p><table>{rows}</table>'
-                f'<p class="notes">{escape(chr(10).join(card["notes"]))}</p><p>{escape(card.get("auctionNote",""))}</p></article>')
+                f'<p class="notes">{escape(chr(10).join(card["notes"]))}</p><p>{escape(card.get("auctionNote",""))}</p>'
+                f'<p>{escape(card.get("verificationNote", ""))}</p></article>')
         pages.append(f'<section id="p{page}"><h2>Strona {page}</h2><div class="spread">'
             f'<a href="../pages/{slug}/p{page:03}.png"><img loading="lazy" src="../pages/{slug}/p{page:03}.png" alt="Strona PDF {page}"></a>'
             f'<div>{"".join(cards) or "Brak początku karty na tej stronie. Sprawdź kontynuację poprzedniej."}</div></div></section>')
@@ -30,9 +31,9 @@ article{{background:#131c2e;border:1px solid #334155;border-radius:12px;padding:
 small{{color:#fbbf24}}table{{width:100%;border-collapse:collapse}}th{{width:64px;text-align:left;vertical-align:top}}
 td,th{{padding:8px;border-bottom:1px solid #334155;white-space:pre-wrap}}.notes{{white-space:pre-wrap}}a{{color:#34d399}}
 @media(max-width:900px){{.spread{{grid-template-columns:1fr}}}}section{{margin-bottom:40px}}
-</style><h1>{escape(category['name'])}</h1><p>Surowy wynik parsera. Żadna karta nie jest jeszcze zatwierdzona.</p>
+</style><h1>{escape(category['name'])}</h1><p>{'Propozycja po weryfikacji. Karty z flagami pozostają szkicami.' if verified else 'Surowy wynik parsera. Żadna karta nie jest jeszcze zatwierdzona.'}</p>
 <p>{result['stats']['cards']} kart · {result['stats']['lines']} odzywek · {result['stats']['flaggedCards']} kart z flagami</p>
 <nav>{' · '.join(f'<a href="#p{p}">{p}</a>' for p in range(1,result['stats']['pages']+1))}</nav>
 {''.join(pages)}<h2>Notatki kategorii</h2>{prose}</html>'''
     folder = Path(root)/'review'; folder.mkdir(parents=True,exist_ok=True)
-    (folder/f'{slug}.html').write_text(html,encoding='utf-8')
+    (folder/f'{slug}{"-verified" if verified else ""}.html').write_text(html,encoding='utf-8')

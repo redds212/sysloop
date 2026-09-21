@@ -23,5 +23,20 @@ brak obrazu jest jawnie oznaczony. W `card` nie zapisujemy URL ani obrazów.
 `skip` pomija tę zmianę w bieżącym imporcie. Zastosowany raw snapshot nadal opisuje cały PDF.
 Administrator jawnie zatwierdzający kartę usuwa flagi; niezweryfikowane pozycje pozostają draft.
 
+M6: plik lokalny `data/proposals/<slug>.json` opakowuje rekord bazy w `run`.
+Pozostałe pola (`rawDigest`, `verificationDigest`, `runDigest`, `images`) są lokalnym
+manifestem kontroli wejść; do `import_runs` wysyłane jest wyłącznie `run`.
+`raw_snapshot` zachowuje także lokalny audyt parsera, bez zmian weryfikatora.
+Zmiany zawierają dodatkowo `lineChanges` (`key`, `kind`), `effectiveLines` (podgląd
+scalenia, SQL wylicza je ponownie z aktualnej bazy) i `sourcePages`.
+Każda dodana karta ma również obraz źródła; kontynuacje mogą wskazywać kilka stron.
+
+`cardKey` może być naprawioną tożsamością, a `newRaw.cardKey` pozostaje surową.
+Importer pamięta to powiązanie z poprzedniego runu również przy usuwaniu kart.
+Zmianę naprawionej tożsamości po pierwszym apply importer zatrzymuje do jawnego
+przeglądu połączenia. Tak samo zatrzymuje zmiany surowych wierszy włączonych
+przez weryfikatora do innego wiersza: istniejący SQL nie ma mapowania wielu
+surowych kluczy na jeden zweryfikowany wiersz. Pierwszy import nie ma tego ograniczenia.
+
 Apply i discard wymagają administratora. Klient nie może bezpośrednio zmieniać `import_runs`.
 Importy kategorii są serializowane, a cała operacja apply jest jedną transakcją.

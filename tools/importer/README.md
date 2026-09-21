@@ -1,4 +1,4 @@
-# Importer lokalny (M3)
+# Importer lokalny (M3 / M6)
 
 Uruchamiaj z katalogu projektu, używając istniejącego venv:
 
@@ -32,5 +32,54 @@ pozostają w pozycjach nieustalonych, wraz z tekstem wierszy i obrazami.
 
 Zestaw testów używa wyłącznie wymyślonych współrzędnych, sekwencji i znaczeń.
 Zawiera odpowiednik każdego wiersza tabeli normalizacji §5.1 i każdego zagrożenia §4.3.
-Polecenia `propose` / `upload` należą do M6 i nie są jeszcze zaimplementowane.
-Importer M3 nie odczytuje kluczy ani nie łączy się z Supabase.
+`parse` i `parse-all` nie odczytują kluczy ani nie łączą się z Supabase.
+
+## Weryfikacja i propozycja
+
+Po obejrzeniu każdej strony zapisz `data/verified/<slug>.json`. Nie nadpisuj surowego
+`data/parsed/<slug>.json`. Format nakładki:
+
+```text
+{ rawDigest, pageDigests: { "p001.png": sha256, ... },
+  cards: [{ rawCardKey, card, verification: "ok" | "uncertain", pages: [1, ...] }] }
+```
+
+`rawDigest` wylicza `diff.digest` z całego surowego JSON; `pageDigests` to SHA-256
+bajtów obejrzanych PNG. Każda surowa karta musi mieć dokładnie jeden wpis.
+`card` to poprawiona karta camelCase. Flagi i `verificationNote` wyjaśniają szkice.
+Puste znaczenia lub nieznane odzywki nie mogą dostać `ok`. W `pages` uwzględnij
+także strony kontynuacji. Sama obecność nakładki nie zastępuje kontroli wizualnej.
+
+```powershell
+& "tools/importer/.venv/Scripts/python.exe" -m tools.importer propose "<slug>"
+```
+
+To wyłącznie odczyt Supabase i zapis lokalny. Wymaga `.env.import`.
+Porównuje z ostatnim zastosowanym importem, nigdy z oczekującym. Propozycja w
+`data/proposals/<slug>.json` zawiera `run`, skróty wejść i manifest obrazów.
+Surowy snapshot pozostaje bez korekt, a `run.proposal.changes` zawiera poprawione
+karty oraz znaczniki zmian wierszy. `effectiveLines` pokazuje oczekiwany wynik
+po zachowaniu korekt administratora w wierszach niezmienionych w surowym PDF.
+
+Po naprawie tożsamości weryfikator zachowuje `rawCardKey`; powiązanie przechodzi
+do następnych importów przez `newRaw.cardKey` i `change.cardKey`. Zmiana naprawionej
+tożsamości w już zastosowanej rewizji wymaga jawnego połączenia kart.
+Obecny SQL scala wiersze według pojedynczego klucza. Jeśli zmieni się surowy wiersz,
+który weryfikator wcześniej włączył do innego znaczenia, `propose` przerywa pracę:
+potrzebny jest przegląd scalania zamiast ryzyka pozostawienia starego tekstu.
+
+## Upload — dopiero po zgodzie właściciela
+
+```powershell
+& "tools/importer/.venv/Scripts/python.exe" -m tools.importer upload "<slug>" --confirm
+```
+
+Wysyła obrazy dodanych, zmienionych i oznaczonych kart do prywatnego `review-pages`,
+potem jeden rekord `import_runs` ze statusem `pending`. Nie uruchamia SQL, RPC apply
+ani zmian kart. Właściciel stosuje propozycję w **Admin → Importy**.
+Zmiana wejść, obrazu lub bazy importu blokuje upload. Ponowienie po awarii używa
+tego samego UUID i tych samych ścieżek; istniejący identyczny run nie jest dodawany
+drugi raz. Przerwana wysyłka obrazów może pozostawić prywatne obiekty bez rekordu;
+ponowienie je nadpisze. Narzędzie nie usuwa zdalnych obiektów automatycznie.
+Po odrzuceniu runu nie wskrzeszamy go przy ponowieniu; przygotowanie nowego runu
+wymaga zachowania starego lokalnego pliku propozycji pod inną nazwą.

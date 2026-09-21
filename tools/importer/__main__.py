@@ -11,7 +11,19 @@ def main():
     sub = parser.add_subparsers(dest='command',required=True)
     one = sub.add_parser('parse'); one.add_argument('file',type=Path)
     sub.add_parser('parse-all')
+    propose = sub.add_parser('propose'); propose.add_argument('slug')
+    send = sub.add_parser('upload'); send.add_argument('slug')
+    send.add_argument('--confirm', action='store_true', help='Jawna zgoda na przesłanie przygotowanej propozycji')
     args = parser.parse_args()
+    if args.command in ('propose', 'upload'):
+        from .upload import prepare, upload
+        if args.command == 'propose':
+            prepared = prepare(args.slug)
+            print(json.dumps({'category':args.slug, **prepared['run']['summary'],
+                              'pageImages':len(prepared['images'])}))
+        else:
+            print(json.dumps(upload(args.slug, confirmed=args.confirm)))
+        return
     files = [args.file] if args.command == 'parse' else sorted(Path('sys files').glob('*.pdf'))
     if not files:
         parser.error('Nie znaleziono plików PDF')
