@@ -1,6 +1,6 @@
 # M6 — pilot Otwarcie 1NT
 
-Stan: przygotowanie zakończone lokalnie, upload oczekuje na zgodę właściciela.
+Stan: upload wykonany po zgodzie właściciela 2026-09-21; run oczekuje na zastosowanie w aplikacji.
 Zakres: jedna kategoria, zgodnie z wyborem właściciela. Pozostałych kategorii nie weryfikowano w M6.
 
 ## Wynik kontroli źródła
@@ -51,7 +51,13 @@ Odczyt Supabase: brak zastosowanego importu i 0 istniejących kart tej kategorii
 Zmiany: 43 added, 0 changed, 0 removed, 0 unchanged.
 Jeden run pending oraz 17 prywatnych PNG (około 1,76 MB); lokalny JSON około 0,65 MB.
 Apply przez właściciela da 40 active i 3 draft, o ile nie zatwierdzi ręcznie szkiców.
-Nie wykonano uploadu, SQL, zdalnego apply, wdrożenia ani publikacji repozytorium.
+Upload wykonano po zgodzie właściciela. Run `b566e3c3-2215-475d-9ced-41fa9a70e6a8`
+ma status `pending` (2026-09-21, 16:35 Europe/Warsaw).
+Odczyt kontrolny potwierdził pełną zgodność rekordu z propozycją, zgodność SHA-256
+wszystkich 17 przesłanych obrazów i prywatność bucketu `review-pages`.
+Kategoria nadal ma 0 kart w tabeli `cards`, ponieważ apply należy do właściciela.
+Prywatne potwierdzenie: `data/verification/otw-1n/upload-receipt.json`.
+Nie wykonano SQL, zdalnego apply, wdrożenia ani publikacji repozytorium.
 
 ## Weryfikacja techniczna
 
@@ -73,7 +79,8 @@ propose: Import przerwany: RuntimeError. Sprawdź lokalne pliki i konfigurację.
 
 Pierwsza porażka wynikała z dostępu sandboxa do katalogu tymczasowego pytest;
 drugie polecenie w sandboxie nie wykonało odczytu sieciowego. Powtórzenia poza tymi
-ograniczeniami zakończyły się powodzeniem. Zdalnego uploadu testowano tylko na atrapie.
+ograniczeniami zakończyły się powodzeniem. Po uzyskaniu zgody rzeczywisty upload
+pilota także zakończył się powodzeniem i został zweryfikowany przez odczyt.
 
 ## Ograniczenia i decyzje
 
@@ -89,4 +96,5 @@ ograniczeniami zakończyły się powodzeniem. Zdalnego uploadu testowano tylko n
 - Akceptacja zdalnych zmian merytorycznych/kosmetycznych na użytkowniku testowym oraz importu
   zawierającego changed/removed pozostaje otwarta (§15.10); nie wykonujemy tych zapisów bez zgody.
 
-Następny krok: zgoda na konkretny upload pilota, potem właściciel przegląda i stosuje run w aplikacji.
+Następny krok: właściciel przegląda i stosuje run w aplikacji (Admin → Importy),
+pozostawiając trzy nierozstrzygnięte pozycje jako szkice.
