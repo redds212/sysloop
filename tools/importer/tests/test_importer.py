@@ -146,6 +146,26 @@ def test_hazard_call_lines_under_prose_header():
     assert r['stats']['lines'] == 1
 
 
+def test_mixed_case_stub_annotation_is_not_an_answer_or_extra_card():
+    r = parse([row('LICYTACJA W SEKWENCJI 4♣ - 4♦',20),
+        row('4♣ - 4♦ Wymyślona uwaga',40),row('4♥ - ?',60),
+        table_row('4♠','wymyślona odpowiedź',90)])
+    assert len(r['cards']) == 1
+    card = r['cards'][0]
+    assert card['auctionKey'] == '4C (P) 4D (P) 4H (P)'
+    assert card['auctionNote'] == 'Wymyślona uwaga'
+    assert [line['key'] for line in card['lines']] == ['4S']
+    assert r['stats']['detectedCallLines'] == 1
+
+
+def test_call_starting_meaning_without_final_question_stays_an_answer():
+    r = parse(root_rows()+[table_row('4♦','5♣ fikcyjna kontynuacja',60),
+        table_row('4♥','druga odpowiedź',80)])
+    assert len(r['cards']) == 1
+    assert r['cards'][0]['lines'][0]['meaning'] == '5♣ fikcyjna kontynuacja'
+    assert r['stats']['lines'] == 2
+
+
 def test_hazard_relative_stubs_resolve_suffix():
     header = [w('4C'),w('4D'),w('4H')]
     calls,flags,_,_ = parse_stub([row('4♥ - 4♠'),row('5♣ - ?')],header)
@@ -231,7 +251,7 @@ def test_explicit_root_after_leading_pass_never_duplicates_header():
 
 def test_category_revision_matching_and_catalog_rows():
     catalog = json.loads(Path('tools/importer/categories.json').read_text(encoding='utf-8'))
-    assert len(catalog) == 14 and len({c['slug'] for c in catalog}) == 14
+    assert len(catalog) == 15 and len({c['slug'] for c in catalog}) == 15
     for meta in catalog:
         mapped = category_for(meta['prefix']+'_rev2099.pdf')
         assert mapped['slug'] == meta['slug'] and mapped['revision'] == 'rev2099'

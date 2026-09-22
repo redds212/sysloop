@@ -34,7 +34,7 @@ A mobile-first web app (PWA) that drills a bidding system one position at a time
 - The front shows the auction and **the calls documented at that point, with their meanings hidden**.
 - The user recalls the meanings silently, reveals them, and **marks the lines they got wrong**. **Only a perfect card passes.**
 - A spaced-repetition schedule (the same engine as BridgeLoop) decides when each card comes back.
-- The content comes from 14 PDFs (one category per file). A local import pipeline parses them; every card is checked against its PDF page; the owner approves doubtful cards. New PDF revisions are imported as reviewed diffs.
+- The content comes from PDFs (one category per file; initially 14, with further categories added at the owner's request). A local import pipeline parses them; every card is checked against its PDF page; the owner approves doubtful cards. New PDF revisions are imported as reviewed diffs.
 - It is a **separate app** from BridgeLoop (own repo, URL, Supabase project), built from a copy of BridgeLoop's code (auth, Supabase, SRS, daily session, timer, settings, PWA, deploy) with **its own screens**.
 - **Closed group:** people sign up, the admin approves them. System content is readable only after approval and never ships in the repo or the public JS bundle.
 
@@ -94,6 +94,7 @@ Mapping lives in `tools/importer/categories.json` (committed; contains names onl
 | `OTW_1S_rev2025.pdf` | `otw-1s` | Otwarcie 1♠ | Otwarcia | 32 | rev2025 |
 | `OTW_1N_rev2025.pdf` | `otw-1n` | Otwarcie 1NT | Otwarcia | 17 | rev2025 |
 | `OTW_2T_rev2025.pdf` | `otw-2t` | Otwarcie 2♣ | Otwarcia | 7 | rev2025 |
+| `OTW_2D_rev2018.pdf` | `otw-2d` | Otwarcie 2♦ | Otwarcia | 6 | rev2018 |
 | `OTW_2M_rev2025beta.pdf` | `otw-2m` | Otwarcie 2♥ i 2♠ | Otwarcia | 3 | rev2025beta |
 | `OTW_2NT_rev2025.pdf` | `otw-2nt` | Otwarcie 2NT | Otwarcia | 8 | rev2025 |
 | `OTW_3_plus.pdf` | `otw-3plus` | Otwarcia 3♣ i wyżej | Otwarcia | 4 | none |

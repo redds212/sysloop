@@ -90,6 +90,7 @@ def header_calls(text):
 def stub_cells(row):
     cells = split_cells(row)
     parsed = []
+    prose_tail = False
     for i, cell in enumerate(cells):
         text = cell_text(cell)
         if not text:
@@ -103,15 +104,18 @@ def stub_cells(row):
                 continue
             return None
         raw, tail = part
-        # A prose meaning after a labelled call is not an auction cell.
+        # Mixed-case annotations may follow a call in a multi-call stub.
+        # The parser still requires a final question before accepting a batch.
         annotation = leading_call(tail) if tail else None
         if tail and raw != '?' and not (tail.isupper() or tail.startswith('=')
                 or (annotation and annotation[1].startswith('='))
                 or re.match(r'^(?:T/O|<\d|[1-7]\+)', tail)):
-            return None
+            prose_tail = True
         parsed.append((i, raw, tail, cell[0].x0))
     filled = [cell for cell in parsed if cell[1]]
     if not filled:
+        return None
+    if prose_tail and len(filled) < 2:
         return None
     return parsed
 

@@ -5,6 +5,7 @@
   {"prefix":"OTW_1S","slug":"otw-1s","name":"Otwarcie 1♠","group":"Otwarcia"},
   {"prefix":"OTW_1N","slug":"otw-1n","name":"Otwarcie 1NT","group":"Otwarcia"},
   {"prefix":"OTW_2T","slug":"otw-2t","name":"Otwarcie 2♣","group":"Otwarcia"},
+  {"prefix":"OTW_2D","slug":"otw-2d","name":"Otwarcie 2♦","group":"Otwarcia"},
   {"prefix":"OTW_2M","slug":"otw-2m","name":"Otwarcie 2♥ i 2♠","group":"Otwarcia"},
   {"prefix":"OTW_2NT","slug":"otw-2nt","name":"Otwarcie 2NT","group":"Otwarcia"},
   {"prefix":"OTW_3_plus","slug":"otw-3plus","name":"Otwarcia 3♣ i wyżej","group":"Otwarcia"},
