@@ -11,14 +11,23 @@ import { NotesView } from '../NotesView'
 import { ReportCardButton } from '../ReportCardButton'
 
 interface Props { card: Card; category?: Category; baseline: SRSEntry; timed: boolean; phase: AttemptPhase; repository: LearningRepository; onRate: (attempt: Attempt) => Promise<void>; onRevealed: () => void }
+const writingPreference='sysloop.write-meanings'
 export function CardView({card,category,baseline,timed,phase,repository,onRate,onRevealed}:Props) {
   const [revealed,setRevealed]=useState(false), [timedOut,setTimedOut]=useState(false), [missed,setMissed]=useState<string[]>([])
+  const [considered,setConsidered]=useState<string[]>([]),[answers,setAnswers]=useState<Record<string,string>>({})
+  const [writing,setWriting]=useState(()=>{try{return localStorage.getItem(writingPreference)==='true'}catch{return false}})
   const [notes,setNotes]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[pending,setPending]=useState<Attempt|null>(null)
   const [loadedEntry]=useState(baseline)
   const expire=useCallback(()=>{setTimedOut(true);setRevealed(true);onRevealed()},[onRevealed])
   const limit=timerLimit(card.lines.length,loadedEntry.consecutiveCorrect)
   const timer=useCardTimer(timed,limit,revealed,expire)
   const reveal=useCallback(()=>{if(timer.expiredNow())setTimedOut(true);setRevealed(true);onRevealed()},[timer,onRevealed])
+  function toggleConsidered(key:string) {setConsidered(prev=>prev.includes(key)?prev.filter(k=>k!==key):[...prev,key])}
+  function changeWriting(value:boolean) {
+    setWriting(value)
+    // Persist only the display preference; answers stay in this card attempt's memory.
+    try {localStorage.setItem(writingPreference,String(value))} catch {/* Storage may be unavailable. */}
+  }
   useEffect(()=>{
     if(revealed)return
     const handle=(e:KeyboardEvent)=>{if((e.key===' '||e.key==='Enter')&&e.target===document.body){e.preventDefault();reveal()}}
@@ -37,12 +46,21 @@ export function CardView({card,category,baseline,timed,phase,repository,onRate,o
     <div className="card-instruction"><span>{revealed?(timedOut?'Czas minął — zaliczone jako błąd':'Zaznacz każdą odzywkę, której znaczenie umknęło.'):'Przypomnij sobie znaczenie każdej odzywki.'}</span>
       {timed&&!revealed&&<span className={`timer ${timer.remaining<=10?'warning':''}`} role="timer" aria-label="Pozostały czas">{Math.floor(timer.remaining/60)}:{String(timer.remaining%60).padStart(2,'0')}</span>}
     </div>
-    <div className="line-list">{card.lines.map(line=><div key={line.key} className={`line-row ${missed.includes(line.key)?'missed':''}`}>
-      <div className="line-label"><CallText text={line.label}/></div>
-      {!revealed?<div className="meaning-blank" aria-label="Znaczenie ukryte"><span/></div>:<button disabled={timedOut||!!pending} className="meaning-button" aria-pressed={missed.includes(line.key)} onClick={()=>setMissed(prev=>prev.includes(line.key)?prev.filter(k=>k!==line.key):[...prev,line.key])}>
-        <span className="verbatim">{line.meaning}</span>{changedSinceLoad(line,loadedEntry.lastSeen)&&<small className="change-chip">zmiana w {line.changedIn}</small>}
-        <span className="mark" aria-hidden="true">{missed.includes(line.key)?'✕':'○'}</span>
-      </button>}
+    {!revealed&&<div className="recall-tools">
+      <label className="writing-toggle"><input type="checkbox" checked={writing} onChange={e=>changeWriting(e.target.checked)}/>Wpisuj własne znaczenia</label>
+      <span className="counter" aria-live="polite">Przemyślane: {considered.length} / {card.lines.length}</span>
+      <p>{writing?'Zapisz skróty lub całe znaczenia. Kliknij odzywkę, gdy ją przemyślisz.':'Kliknij odzywkę lub puste pole, gdy przypomnisz sobie znaczenie.'} Ponowne kliknięcie usuwa znacznik.</p>
+    </div>}
+    <div className="line-list">{card.lines.map(line=><div key={line.key} className={`line-row ${missed.includes(line.key)?'missed':''} ${!revealed&&considered.includes(line.key)?'considered':''}`}>
+      {!revealed?<button type="button" className="line-label recall-label" aria-label={`Przemyślana odzywka ${line.label}`} aria-pressed={considered.includes(line.key)} onClick={()=>toggleConsidered(line.key)}><CallText text={line.label}/></button>:<div className="line-label"><CallText text={line.label}/></div>}
+      {!revealed?(writing?<div className="answer-input-wrap"><textarea className="answer-input" aria-label={`Twoje znaczenie: ${line.label}`} placeholder="Twoje znaczenie…" rows={1} maxLength={4000} value={answers[line.key]??''} onChange={e=>setAnswers(prev=>({...prev,[line.key]:e.target.value}))}/>{considered.includes(line.key)&&<span className="recall-check" aria-label="Przemyślane">✓</span>}</div>:<button type="button" className="meaning-blank" aria-label={`Przemyślane znaczenie ${line.label}`} aria-pressed={considered.includes(line.key)} onClick={()=>toggleConsidered(line.key)}><span aria-label="Znaczenie ukryte"/>{considered.includes(line.key)&&<small className="recall-check" aria-hidden="true">✓</small>}</button>):<div className={`meaning-content ${answers[line.key]?.trim()?'with-answer':''}`}>
+        {answers[line.key]?.trim()&&<div className="own-answer"><small>Twój zapis</small><p className="verbatim">{answers[line.key]}</p></div>}
+        <button disabled={timedOut||!!pending} className="meaning-button" aria-pressed={missed.includes(line.key)} onClick={()=>setMissed(prev=>prev.includes(line.key)?prev.filter(k=>k!==line.key):[...prev,line.key])}>
+          {answers[line.key]?.trim()&&<small className="answer-caption">Znaczenie w systemie</small>}
+          <span className="verbatim">{line.meaning}</span>{changedSinceLoad(line,loadedEntry.lastSeen)&&<small className="change-chip">zmiana w {line.changedIn}</small>}
+          <span className="mark" aria-hidden="true">{missed.includes(line.key)?'✕':'○'}</span>
+        </button>
+      </div>}
     </div>)}</div>
     {revealed&&(card.notes.length>0||card.auctionNote)&&<section className="notes-block"><h2>Uwagi</h2>{[...card.notes,...(card.auctionNote?[card.auctionNote]:[])].map((note,i)=><p className="verbatim" key={i}>{note}</p>)}</section>}
     {revealed&&<div className="secondary-actions"><ReportCardButton card={card} category={category} repository={repository}/>{category&&<button className="text-button" onClick={()=>setNotes(true)}>Notatki</button>}</div>}

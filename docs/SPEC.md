@@ -226,6 +226,8 @@ Card identity `card_key` = `<categorySlug>|<auctionKey>`, plus `|<context>` when
 Phases: `front` → `revealed` → `rated`.
 
 **Front**
+Owner UI clarification (2026-09-21): answer rows are about 20% more compact (54 px minimum instead of 67 px). Before reveal, tapping a call or its blank toggles a neutral “considered” marker; this is a memory aid, independent of grading. An optional **Wpisuj własne znaczenia** mode accepts free text per line. After reveal the user's text stays next to the system meaning (stacked on mobile) for self-comparison. Only the writing-mode preference is kept locally; texts and considered markers last for the current card attempt and are not sent to the backend. Blank or different text does not automatically fail a card; the existing missed-line and timeout rules remain in force.
+
 - Breadcrumb: category · section.
 - Auction (5.1). Uncontested → rows of `otwierający | odpowiadający`. Contested → 4-column rows, the first column is the first caller.
 - Context chip, qualifier chips.

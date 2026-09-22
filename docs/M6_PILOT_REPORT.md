@@ -1,6 +1,7 @@
 # M6 — pilot Otwarcie 1NT
 
-Stan: upload wykonany po zgodzie właściciela 2026-09-21; run oczekuje na zastosowanie w aplikacji.
+Stan: upload wykonany po zgodzie właściciela 2026-09-21. Odczyt kontrolny 2026-09-22
+potwierdził zastosowanie importu przez właściciela: 40 active i 3 draft.
 Zakres: jedna kategoria, zgodnie z wyborem właściciela. Pozostałych kategorii nie weryfikowano w M6.
 
 ## Wynik kontroli źródła
@@ -96,5 +97,5 @@ pilota także zakończył się powodzeniem i został zweryfikowany przez odczyt.
 - Akceptacja zdalnych zmian merytorycznych/kosmetycznych na użytkowniku testowym oraz importu
   zawierającego changed/removed pozostaje otwarta (§15.10); nie wykonujemy tych zapisów bez zgody.
 
-Następny krok: właściciel przegląda i stosuje run w aplikacji (Admin → Importy),
-pozostawiając trzy nierozstrzygnięte pozycje jako szkice.
+Pilot został zastosowany; trzy nierozstrzygnięte pozycje pozostały szkicami.
+Do dalszej pracy pozostaje rozstrzygnięcie szkiców i weryfikacja pozostałych kategorii.
