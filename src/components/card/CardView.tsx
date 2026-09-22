@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Attempt, AttemptPhase, Card, Category, SRSEntry } from '../../types'
 import type { LearningRepository } from '../../lib/learningRepository'
-import { grade, errorNoun } from '../../lib/grading'
+import { grade, errorNoun, callNoun } from '../../lib/grading'
 import { timerLimit } from '../../lib/timer'
 import { changedSinceLoad } from '../../lib/contentChanges'
 import { useCardTimer } from '../../hooks/useCardTimer'
 import { AuctionView, CallText } from '../AuctionView'
 import { Modal } from '../Modal'
 import { NotesView } from '../NotesView'
+import { SourcePreviewButton } from '../SourcePreviewButton'
 import { ReportCardButton } from '../ReportCardButton'
 
-interface Props { card: Card; category?: Category; baseline: SRSEntry; timed: boolean; phase: AttemptPhase; repository: LearningRepository; onRate: (attempt: Attempt) => Promise<void>; onRevealed: () => void }
+interface Props { previousMissed?: string[]; scope?: Attempt['scope']; card: Card; category?: Category; baseline: SRSEntry; timed: boolean; phase: AttemptPhase; repository: LearningRepository; onRate: (attempt: Attempt) => Promise<void>; onRevealed: () => void }
 const writingPreference='sysloop.write-meanings'
-export function CardView({card,category,baseline,timed,phase,repository,onRate,onRevealed}:Props) {
+export function CardView({card,category,baseline,timed,phase,repository,onRate,onRevealed,previousMissed=[],scope='full'}:Props) {
   const [revealed,setRevealed]=useState(false), [timedOut,setTimedOut]=useState(false), [missed,setMissed]=useState<string[]>([])
   const [considered,setConsidered]=useState<string[]>([]),[answers,setAnswers]=useState<Record<string,string>>({})
   const [writing,setWriting]=useState(()=>{try{return localStorage.getItem(writingPreference)==='true'}catch{return false}})
@@ -35,13 +36,14 @@ export function CardView({card,category,baseline,timed,phase,repository,onRate,o
   },[revealed,reveal])
   async function rate() {
     if(busy)return
-    const attempt=pending??grade(card,missed,timedOut,phase)
+    const attempt=pending??{...grade(card,missed,timedOut,phase),scope}
     setPending(attempt);setBusy(true);setError('')
     try {await onRate(attempt)} catch {setError('Zapis nie został potwierdzony. Przywróć połączenie i ponów zapis.')} finally {setBusy(false)}
   }
   return <article className="learning-card">
     <div className="card-breadcrumb"><span>{category?.name}</span><span className="section-title">{card.section}</span></div>
-    <div className="position-heading"><h1>{phase==='buffer'?'Jeszcze raz, spokojnie.':'Co oznaczają te odzywki?'}</h1><span className="counter">{card.lines.length} odzywek</span></div>
+    <div className="position-heading"><h1>{phase==='buffer'?'Jeszcze raz, spokojnie.':'Co oznaczają te odzywki?'}</h1><span className="counter">{card.lines.length} {callNoun(card.lines.length)}</span></div>
+    {scope==='partial'&&<p className="correction-note">Poprawiasz tylko wcześniej błędne odzywki. Cała pozycja wróci jutro.</p>}
     <AuctionView auction={card.auction}/>{card.context&&<p className="context-chip">{card.context}</p>}
     <div className="card-instruction"><span>{revealed?(timedOut?'Czas minął — zaliczone jako błąd':'Zaznacz każdą odzywkę, której znaczenie umknęło.'):'Przypomnij sobie znaczenie każdej odzywki.'}</span>
       {timed&&!revealed&&<span className={`timer ${timer.remaining<=10?'warning':''}`} role="timer" aria-label="Pozostały czas">{Math.floor(timer.remaining/60)}:{String(timer.remaining%60).padStart(2,'0')}</span>}
@@ -51,7 +53,8 @@ export function CardView({card,category,baseline,timed,phase,repository,onRate,o
       <span className="counter" aria-live="polite">Przemyślane: {considered.length} / {card.lines.length}</span>
       <p>{writing?'Zapisz skróty lub całe znaczenia. Kliknij odzywkę, gdy ją przemyślisz.':'Kliknij odzywkę lub puste pole, gdy przypomnisz sobie znaczenie.'} Ponowne kliknięcie usuwa znacznik.</p>
     </div>}
-    <div className="line-list">{card.lines.map(line=><div key={line.key} className={`line-row ${missed.includes(line.key)?'missed':''} ${!revealed&&considered.includes(line.key)?'considered':''}`}>
+    <div className="line-list">{card.lines.map(line=><div key={line.key} className={`line-row ${previousMissed.includes(line.key)?'previous-miss':''} ${missed.includes(line.key)?'missed':''} ${!revealed&&considered.includes(line.key)?'considered':''}`}>
+      {previousMissed.includes(line.key)&&<small className="previous-miss-label">Poprzednio błąd</small>}
       {!revealed?<button type="button" className="line-label recall-label" aria-label={`Przemyślana odzywka ${line.label}`} aria-pressed={considered.includes(line.key)} onClick={()=>toggleConsidered(line.key)}><CallText text={line.label}/></button>:<div className="line-label"><CallText text={line.label}/></div>}
       {!revealed?(writing?<div className="answer-input-wrap"><textarea className="answer-input" aria-label={`Twoje znaczenie: ${line.label}`} placeholder="Twoje znaczenie…" rows={1} maxLength={4000} value={answers[line.key]??''} onChange={e=>setAnswers(prev=>({...prev,[line.key]:e.target.value}))}/>{considered.includes(line.key)&&<span className="recall-check" aria-label="Przemyślane">✓</span>}</div>:<button type="button" className="meaning-blank" aria-label={`Przemyślane znaczenie ${line.label}`} aria-pressed={considered.includes(line.key)} onClick={()=>toggleConsidered(line.key)}><span aria-label="Znaczenie ukryte"/>{considered.includes(line.key)&&<small className="recall-check" aria-hidden="true">✓</small>}</button>):<div className={`meaning-content ${answers[line.key]?.trim()?'with-answer':''}`}>
         {answers[line.key]?.trim()&&<div className="own-answer"><small>Twój zapis</small><p className="verbatim">{answers[line.key]}</p></div>}
@@ -63,9 +66,9 @@ export function CardView({card,category,baseline,timed,phase,repository,onRate,o
       </div>}
     </div>)}</div>
     {revealed&&(card.notes.length>0||card.auctionNote)&&<section className="notes-block"><h2>Uwagi</h2>{[...card.notes,...(card.auctionNote?[card.auctionNote]:[])].map((note,i)=><p className="verbatim" key={i}>{note}</p>)}</section>}
-    {revealed&&<div className="secondary-actions"><ReportCardButton card={card} category={category} repository={repository}/>{category&&<button className="text-button" onClick={()=>setNotes(true)}>Notatki</button>}</div>}
+    {revealed&&<div className="secondary-actions"><SourcePreviewButton cardId={card.id} repository={repository}/><ReportCardButton card={card} category={category} repository={repository}/>{category&&<button className="text-button" onClick={()=>setNotes(true)}>Notatki</button>}</div>}
     {error&&<p className="error-note" role="alert">{error}</p>}
-    <footer className="card-action"><p className="muted">{revealed?'Tylko komplet poprawnych odpowiedzi zalicza kartę.':'Znaczenia odsłonisz jednocześnie.'}</p>
+    <footer className="card-action"><p className="muted">{phase==='hard'?'Ćwiczenie bez zmiany planu powtórek.':scope==='partial'?'To krótka poprawka. Cała pozycja wróci jutro.':revealed?'Tylko komplet poprawnych odpowiedzi zalicza kartę.':'Znaczenia odsłonisz jednocześnie.'}</p>
       <button className={`primary ${revealed&&(timedOut||missed.length)?'retry':''}`} disabled={busy} onClick={()=>{if(revealed)void rate();else reveal()}}>{busy?'Zapisywanie…':error?'Ponów zapis':!revealed?'Pokaż':timedOut?'Dalej':missed.length?`Dalej · ${missed.length} ${errorNoun(missed.length)}`:'Wszystko dobrze'}</button>
     </footer>
     {notes&&category&&<Modal title="Notatki kategorii" onClose={()=>setNotes(false)}><NotesView category={category}/></Modal>}

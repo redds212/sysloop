@@ -3,7 +3,7 @@ export interface HardLine { cardId: string; line: CardLine; misses: number; appe
 export function hardLines(cards: readonly Card[], attempts: readonly Attempt[]): HardLine[] {
   const byCard = new Map<string, Attempt[]>()
   for (const attempt of [...attempts].sort((a, b) => b.ts.localeCompare(a.ts))) {
-    if (attempt.missedLineKeys === null) continue
+    if (attempt.missedLineKeys === null || attempt.scope === 'partial' || attempt.phase === 'hard') continue
     if (!byCard.has(attempt.cardId)) byCard.set(attempt.cardId, [])
     byCard.get(attempt.cardId)!.push(attempt)
   }

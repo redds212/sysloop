@@ -20,6 +20,8 @@ W SQL Editor wykonaj całe pliki, po kolei:
 3. `supabase/migrations/0003_accounts.sql`
 4. `supabase/migrations/0004_card_edits.sql`
 5. `supabase/migrations/0005_import_runs.sql`
+6. `supabase/migrations/0006_difficult_practice.sql`
+7. `supabase/migrations/0007_source_preview.sql`
 
 Każdy plik ma transakcję oraz jest idempotentny. Nie ma seedów z treścią.
 Powstaną: profiles, categories, cards, srs_progress, attempts, daily_sessions,
@@ -68,7 +70,7 @@ Sprawdzaj jako rzeczywiści użytkownicy, nie jako service role (omija RLS):
 
 - Anonimowy użytkownik nie odczytuje tabel z treścią.
 - Pending odczytuje własny profil, ale nie kategorie ani karty.
-- Approved odczytuje aktywne karty; nie draft, archived, import_runs, obrazy ani zgłoszenia.
+- Approved odczytuje aktywne karty; nie draft, archived, import_runs, obrazy z niezatwierdzonych importów ani zgłoszenia. Obrazy powiązane z aktywnymi kartami w zastosowanych importach są dostępne przez podgląd oryginału.
 - Próba zmiany własnego `is_admin` lub `status` bez uprawnień admina nie przechodzi.
 - Własne ustawienia zmieniają się przez `update_my_settings`.
 - Historia i postęp są własne; usunięcie własnych danych jest możliwe również po cofnięciu zatwierdzenia.
@@ -78,3 +80,14 @@ Sprawdzaj jako rzeczywiści użytkownicy, nie jako service role (omija RLS):
 
 Pełne sprawdzenie zapisu kart, importu i zmian postępu nastąpi po przygotowaniu interfejsu
 oraz fikcyjnych danych kontrolnych. Żadna migracja nie była wykonana przez agenta.
+
+## Aktualizacja z 22 września: poprawki, trudne sekwencje i oryginał
+
+Jeżeli kroki 1–5 były już wykonane, uruchom tylko pliki **0006**, następnie **0007**, każdy w całości w SQL Editor projektu SysLoop. Następnie odśwież aplikację. Nie trzeba odtwarzać tabel, kont ani importować 1NT ponownie.
+
+- 0006 dodaje zapis trybu poprawek, zakresu próby, kolejki błędnych linii i osobnych gwiazdek z RLS. Dotychczasowa historia jest traktowana jako pełne próby. Ustawienia: Mój panel → Poprawki na końcu sesji.
+- 0007 dodaje pobieranie granic źródła oraz wąski odczyt obrazów aktywnych kart dla zatwierdzonych użytkowników. Bucket **pozostaje prywatny**. Przy każdym otwarciu podglądu aplikacja otrzymuje podpisane adresy ważne 10 minut.
+- W ćwiczeniu przycisk **Oryginalny fragment** pojawia się po odsłonięciu znaczeń. Przełącznik **Cała strona** pokazuje otoczenie. Gdy nie ma pewnych granic fragmentu, aplikacja wyjaśnia i pokazuje całą stronę.
+- Dla obecnego 1NT obrazy są już przesłane. Zachowujemy pliki w `sys files/` oraz obrazy w prywatnym zasobniku; nie trzeba przesyłać pełnego PDF-a.
+- Sprawdź na zatwierdzonym koncie zapis gwiazdki, wznowienie krótkiej poprawki i źródło; na innym koncie gwiazdki i próby mają być niezależne. Pending/anon nie mogą pobierać źródeł.
+- Przed 0006 dotychczasowa nauka działa, nowe tryby pozostają wyłączone z informacją o aktualizacji. Nie uruchamiano tych migracji automatycznie.

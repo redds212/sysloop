@@ -243,10 +243,14 @@ Owner UI clarification (2026-09-21): answer rows are about 20% more compact (54 
 
 **Rated** → next card (session) or the result state (free practice, 6.6).
 
+**Owner extension (2026-09-22):**
+- **Poprzednio błąd** marks the missed lines of the latest full attempt, visible before reveal. A full timeout marks all lines present in that attempt. A later correct full attempt clears the marks. Partial corrections and `hard` attempts never change them.
+- After reveal, **Oryginalny fragment** opens the source fragment, with **Cała strona** to show context. Read mode also offers it. Fetch source metadata/images only on opening this preview, never on the front. Preserve original local PDFs and uploaded page images. Crops use parser row coordinates, including continuation rows and notes; when geometry cannot identify a reliable fragment, show the full page with an explicit explanation. Source images may differ from subsequent in-app editorial corrections.
+
 ### 6.2 Grading
 
 - Pass ⇔ zero missed lines.
-- Every rating writes an attempt: `card_id`, `correct`, `phase` (`main`, `buffer` or `free`), `missed_line_keys` (empty array on pass; `null` on timeout), `timed_out`, `line_count`, `ts`.
+- Every rating writes an attempt: `card_id`, `correct`, `phase` (`main`, `buffer`, `free` or `hard`), `missed_line_keys` (empty array on pass; `null` on timeout), `timed_out`, `line_count`, `ts`.
 
 ### 6.3 Timer (tryb na czas)
 
@@ -280,6 +284,8 @@ Copy BridgeLoop `src/lib/session.ts` and `src/hooks/useDailySession.ts`, replaci
 - Owner clarification (2026-09-17): unfinished main-pass misses at midnight become `LEARNING`, step 0, due the day after the original answer. Recover these before generating the next day's queue; do not override a later free-practice or buffer rating.
 - Progress bar `7 / 20`; label **Poprawki** during the buffer pass; completion summary at the end.
 
+Owner extension (2026-09-22): `profiles.correction_mode` chooses **Cała pozycja** (`whole`, default) or **Tylko błędne odzywki** (`missed`). The main attempt remains full. When grading a main miss, snapshot the missed keys in `daily_sessions.correction_lines`. In the buffer, show these lines together with the complete auction/context; store `scope = partial`, even if all original lines were missed. Do not clear the previous-error marker or use this partial attempt in frequent-error statistics. There is still one buffer attempt and the whole card returns tomorrow at step 0 regardless of its result. Timeout or no remaining missed keys after a content edit falls back to a full correction. A settings change affects future main misses, not already queued corrections. Older sessions without this field retain full corrections.
+
 ### 6.6 Free practice (sidebar, search, read mode, Trudne odzywki)
 
 - **Counts toward the schedule.** `phase = 'free'`.
@@ -305,6 +311,7 @@ Copy BridgeLoop: login, sign-up (email + username + password), email confirmatio
 
 ### 7.2 Shell
 - **Sidebar** (drawer on mobile): wordmark; buttons **Mój panel**, **Admin** (admins only), **Wyloguj**; **Rekomendowane na dziś** (first 3 items of today's queue + "+N więcej"); **Szukaj sekwencji**; **Trudne odzywki**; the category tree; footer counters **Nowe / Nauka / Opanowane**.
+- **Owner UI extension (2026-09-22):** expanded position rows use progressively stronger pale green for REVIEW steps 1–3, strong green for MASTERED steps 4–5, red for LEARNING and neutral for NEW. A legend and row tooltip explain the stage/date. This is display only.
 - **Category tree**: group (Otwarcia, Obrona) → category (with progress, e.g. `38 / 197`) → **Notatki** entry + sections → positions. A position row shows the compact auction and a status dot (grey new, red learning, amber review, emerald mastered). Tap → free practice. Secondary icon → read mode.
 - **Main area** by default: **Rozpocznij sesję (20)**, **Wznów sesję (4 / 20)** or today's summary.
 
@@ -321,13 +328,15 @@ Per category: prose sections in PDF order (title + body, line breaks kept). Read
 ### 7.5 Search by auction
 Section 8.
 
-### 7.6 Trudne odzywki
+### 7.6 Trudne sekwencje (owner extension, 2026-09-22)
 
-Owner clarification (2026-09-16): attempts also store `present_line_keys text[]`, the keys present at grading, so only appearances while a line existed are counted.
-- A line is **trudna** when it was missed in at least 2 of its last 5 graded appearances. An appearance is an attempt of its card with `missed_line_keys` not null, made while the line existed.
-- Sorted by misses in the last 5 (descending), then by most recent miss. Row: call label, compact auction, category, `2/5`, date of last miss.
-- Tap → free practice of that card; after reveal the line is outlined as trudna.
-- Empty state: **Brak trudnych odzywek — tak trzymaj.**
+Attempts store `present_line_keys text[]`, so only appearances while a line existed are counted.
+- Automatic **Częste błędy**: an active card qualifies if any current line was missed at least 2 times in its last 5 graded **full** appearances (`missed_line_keys` not null, `scope != partial`, `phase != hard`). Full main, free and full-buffer attempts count. Removed lines are ignored.
+- Manual **Moje ★**: any active card may be starred independently of its grade. The star persists until the user removes it and is stored separately from SRS flags.
+- Filters: **Wszystkie**, **Moje ★**, **Częste błędy**. Show each card once, with auction, category, section/context and qualifying line labels with misses/appearances and last miss. Order by misses descending, latest miss descending, then card order.
+- **Ćwicz trudne** trains the current filtered collection (or one chosen card) as full cards, without a timer or any SRS changes. Repeating is unlimited. Every graded attempt is persisted as `phase = hard`; it does not affect scheduling, new-card eligibility, midnight recovery, frequent-error statistics or previous-error marks. It does not consume or change daily-session slots. A training queue lasts for the current visit; reload returns to the panel while keeping attempts and stars.
+- Reading and removing a star never change the automatic frequent-error classification.
+- This special training supersedes the former §7.6 link into schedule-affecting free practice. Ordinary sidebar free practice retains §6.6 behavior.
 
 ### 7.7 Mój panel
 Follow BridgeLoop `UserPanel`: tiles (dni z rzędu, śr. dziennie, rozwiązanych łącznie, opanowanych); Dzisiejsza sesja (retries / reviews / new + start); Ustawienia nauki (daily target slider, mode, tryb na czas); Plan powtórek na kolejne dni; Historia (label = category · compact auction, action **Ćwicz**); **Postęp w kategoriach** (new: per category seen / total and mastered); Strefa resetu.
@@ -450,6 +459,9 @@ A new Supabase project (region Frankfurt, Free plan). Setup guide `docs/BACKEND_
 - **daily_sessions**: as BridgeLoop 0010, slots `[{ cardId, kind }]`, `buffer` = card ids.
 - **card_reports**: as BridgeLoop `deal_reports` (0008 + 0009) with `card_id` and `card_label`.
 - **import_runs**: `id` uuid (pk), `category_slug`, `source_file`, `revision`, `status` (pending, applied, discarded), `raw_snapshot` jsonb, `proposal` jsonb, `summary` jsonb, `created_at`, `applied_at`, `applied_by`.
+- **difficult_cards**: (`user_id`, `card_id`) primary key, cascading user/card foreign keys. Own rows only, read/insert while approved; own delete always.
+- Owner extension: `profiles.correction_mode` = whole/missed; `attempts.scope` = full/partial (legacy default full), phase also accepts hard; partial is allowed only in buffer; `daily_sessions.correction_lines` stores per-card missed keys or null for whole-card corrections.
+- RPC `update_my_learning_settings` saves existing settings plus correction mode. `card_source(card_id)` exposes only source geometry and approved image paths, never import payloads or raw texts. `can_read_source_page(path)` limits storage access to active-card source pages.
 - Storage bucket **review-pages** (private): `<run_id>/p<NNN>.png`.
 
 ### 10.2 Row level security
@@ -463,7 +475,7 @@ Use BridgeLoop's security-definer helpers `is_admin(uid)` and `is_approved(uid)`
 | srs_progress, attempts, daily_sessions | own rows while approved | own rows while approved; own delete always |
 | card_reports | admin | insert own while approved; admin update / delete |
 | import_runs | admin | status changes via RPC; insert by service role |
-| storage review-pages | admin | service role |
+| storage review-pages | admin; approved: active-card source pages from applied imports only | service role |
 
 Grant table privileges to `authenticated` explicitly for every table (BridgeLoop lesson: RLS alone ends in "permission denied for table").
 
@@ -539,7 +551,7 @@ GitHub Actions → GitHub Pages, as BridgeLoop (secrets `VITE_SUPABASE_URL`, `VI
 2. No system content (meanings, notes, real card auctions, page images) in the frontend bundle, `public/`, test fixtures, commit messages or logs. Tests use invented content.
 3. The service role key lives only in `.env.import` on the local machine; never in `VITE_*` variables or frontend code.
 4. Content is fetched only after login and approval (RLS). After a production build, search `dist/` for a known meaning string: it must not be found.
-5. Page images are admin-only.
+5. Owner extension (2026-09-22): page images remain in the private `review-pages` bucket. Approved users may read only images linked to active cards of the matching revision in applied imports, using expiring signed URLs. The app exposes the preview after reveal or in read mode. Full-page context may include adjacent positions. Pending/discarded import review remains admin-only; anonymous/pending users gain no access. Original PDFs remain local and gitignored. Preserve historical PDFs and page images required by source previews; do not treat them as disposable caches.
 6. The repo may be public (like BridgeLoop) only because rules 1–5 hold.
 7. Documentation follows the same rule: this spec shows the notes' **notation** (auctions, headers, qualifiers) but never real **meanings**. Use `…` or invented text when writing examples.
 

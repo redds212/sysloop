@@ -20,9 +20,10 @@ export interface SRSEntry {
 }
 export type SRSStore = Record<string, SRSEntry>
 export type LearningMode = 'maintenance' | 'balanced' | 'intensive'
-export interface UserSettings { dailyTarget: number; mode: LearningMode; timedMode?: boolean }
-export type AttemptPhase = 'main' | 'buffer' | 'free'
+export type CorrectionMode = 'whole' | 'missed'
+export interface UserSettings { dailyTarget: number; mode: LearningMode; timedMode?: boolean; correctionMode?: CorrectionMode }
+export type AttemptPhase = 'main' | 'buffer' | 'free' | 'hard'
 export interface Attempt {
   cardId: string; correct: boolean; phase: AttemptPhase; missedLineKeys: string[] | null;
-  presentLineKeys: string[]; timedOut: boolean; lineCount: number; ts: string
+  presentLineKeys: string[]; timedOut: boolean; lineCount: number; ts: string; scope?: 'full' | 'partial'
 }

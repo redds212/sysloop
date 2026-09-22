@@ -7,6 +7,7 @@ import { applyAnswer, normalizeEntry } from './srs'
 export function unfinishedCorrections(data: LearningData, now = new Date()) {
   const latest = new Map<string, Attempt>()
   for (const attempt of data.attempts) {
+    if (attempt.phase === 'hard') continue
     const previous = latest.get(attempt.cardId)
     if (!previous || Date.parse(attempt.ts) >= Date.parse(previous.ts)) latest.set(attempt.cardId, attempt)
   }

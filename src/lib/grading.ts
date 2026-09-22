@@ -11,3 +11,7 @@ export function errorNoun(count: number): string {
   if (count === 1) return 'błąd'
   return count % 10 >= 2 && count % 10 <= 4 && !(count % 100 >= 12 && count % 100 <= 14) ? 'błędy' : 'błędów'
 }
+export function callNoun(count: number): string {
+  if (count === 1) return 'odzywka'
+  return count % 10 >= 2 && count % 10 <= 4 && !(count % 100 >= 12 && count % 100 <= 14) ? 'odzywki' : 'odzywek'
+}

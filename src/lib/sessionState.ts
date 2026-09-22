@@ -4,7 +4,7 @@ import { adaptSession, type DailySession } from './session'
 import { todayKey } from './date'
 
 /** Serializable domain snapshot; the persistence hook will be added in M4. */
-export interface SessionState { session: DailySession; index: number; buffer: string[]; bufferIndex: number; inBuffer: boolean }
+export interface SessionState { session: DailySession; index: number; buffer: string[]; bufferIndex: number; inBuffer: boolean; correctionLines?: Record<string, string[] | null> }
 export function startSession(session: DailySession): SessionState {
   return { session, index: 0, buffer: [], bufferIndex: 0, inBuffer: false }
 }
@@ -19,11 +19,22 @@ export function advanceSession(state: SessionState, miss = false): SessionState 
   const index = state.index + 1
   return { ...state, index, buffer, inBuffer: index >= state.session.slots.length && buffer.length > 0 }
 }
-export function answerSession(state: SessionState, attempt: Attempt, previous: SRSEntry, now = new Date()) {
+export function answerSession(state: SessionState, attempt: Attempt, previous: SRSEntry, now = new Date(), correctionMode: UserSettings['correctionMode'] = 'whole') {
   if (attempt.cardId !== currentCardId(state) || attempt.phase !== (state.inBuffer ? 'buffer' : 'main')) throw new Error('Próba nie pasuje do bieżącej pozycji')
   const progress = state.inBuffer ? finalizeBuffer(previous, attempt.correct, now)
     : attempt.correct ? applyAnswer(previous, true, now) : null
-  return { attempt, progress, state: advanceSession(state, !attempt.correct) }
+  const next = advanceSession(state, !attempt.correct)
+  if (!state.inBuffer && !attempt.correct) next.correctionLines = {
+    ...state.correctionLines, [attempt.cardId]: correctionMode === 'missed' && attempt.missedLineKeys?.length ? [...attempt.missedLineKeys] : null,
+  }
+  return { attempt, progress, state: next }
+}
+
+/** Missing/removed keys and timeouts fall back to the whole card. */
+export function correctionCard(card: Card, state: SessionState): { card: Card; scope: 'full' | 'partial' } {
+  const keys = state.inBuffer ? state.correctionLines?.[card.id] : null
+  const lines = keys ? card.lines.filter(line => keys.includes(line.key)) : []
+  return lines.length ? { card: { ...card, lines }, scope: 'partial' } : { card, scope: 'full' }
 }
 export function restoreSession(state: SessionState, cards: readonly Card[], now = new Date()): SessionState | null {
   if (state.session.date !== todayKey(now)) return null

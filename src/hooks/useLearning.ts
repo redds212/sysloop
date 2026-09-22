@@ -36,6 +36,7 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
     setError('')
     try {
       const loaded = await hydrate(repository,journal)
+      setSettings(previous=>({...previous,correctionMode:loaded.correctionMode??'whole'}))
       setData(loaded)
       setLoadedDay(todayKey())
       return true
@@ -45,7 +46,7 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
   useEffect(() => { let active = true; void (async () => {
     try {
       const loaded = await hydrate(repository,journal)
-      if(active) { setData(loaded); setLoadedDay(day) }
+      if(active) { setSettings(previous=>({...previous,correctionMode:loaded.correctionMode??'whole'})); setData(loaded); setLoadedDay(day) }
     } catch { if(active) setError('Nie udało się wczytać danych. Sprawdź połączenie i spróbuj ponownie.') }
   })(); return () => { active = false } }, [repository,journal,day])
 
@@ -64,6 +65,7 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
         store: actual.progress ? { ...previous.store, [actual.progress.cardId]: actual.progress.entry } : previous.store,
         attempts: actual.attempt && !previous.attempts.some(a => a.cardId === actual.attempt!.cardId && a.ts === actual.attempt!.ts) ? [...previous.attempts, actual.attempt] : previous.attempts,
         session: actual.session ?? previous.session,
+        starredCardIds: actual.star ? [...(previous.starredCardIds??[]).filter(id=>id!==actual.star!.cardId),...(actual.star.starred?[actual.star.cardId]:[])] : previous.starredCardIds,
       }))
       return actual
     } catch {
@@ -71,7 +73,7 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
       throw new Error('Zapis nie został potwierdzony.')
     } finally { lock.current = false; setBusy(false) }
   }
-  const attemptedIds = new Set(data?.attempts.map(a => a.cardId))
+  const attemptedIds = new Set(data?.attempts.filter(a=>a.phase!=='hard').map(a => a.cardId))
   const queue = data ? generateDailySession(data.cards,data.store,settings,new Date(),attemptedIds) : null
   async function begin() {
     if (!data || !queue || loadedDay !== todayKey()) return
@@ -83,11 +85,16 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
   }
   async function answer(attempt: Attempt) {
     if(!data || !session || session.session.date !== todayKey()) throw new Error('Rozpoczął się nowy dzień. Wróć do dzisiejszej sesji.')
-    const result = answerSession(session,attempt,normalizeEntry(data.store[attempt.cardId]),new Date(attempt.ts))
+    const result = answerSession(session,attempt,normalizeEntry(data.store[attempt.cardId]),new Date(attempt.ts),settings.correctionMode)
     result.state = restoreSession(result.state,data.cards) ?? result.state
     await commit({ attempt, ...(result.progress ? { progress: { cardId: attempt.cardId, entry: result.progress } } : {}), session: result.state })
   }
   async function saveVisit(attempt: Attempt, entry: SRSEntry) { await commit({ attempt, progress: { cardId: attempt.cardId, entry } }) }
+  async function saveHard(attempt: Attempt) {
+    if(attempt.phase !== 'hard') throw new Error('Nieprawidłowy tryb ćwiczenia.')
+    await commit({attempt})
+  }
+  async function setStar(cardId:string,starred:boolean) { await commit({star:{cardId,starred}}) }
   async function restoreVisit(card: Card, entry: SRSEntry) { await commit({ progress: { cardId: card.id, entry } }) }
   async function updateSettings(next: UserSettings) {
     if(lock.current) return
@@ -105,5 +112,5 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
     } catch { setError('Nie udało się zapisać ustawień. Spróbuj ponownie.'); throw new Error('Zapis ustawień nie powiódł się.') }
     finally { lock.current=false; setBusy(false) }
   }
-  return { data, loading: !data || loadedDay !== day, settings, session, queue, currentId: session ? currentCardId(session) : null, day, busy, error, load, begin, answer, saveVisit, restoreVisit, updateSettings }
+  return { data, loading: !data || loadedDay !== day, settings, session, queue, currentId: session ? currentCardId(session) : null, day, busy, error, load, begin, answer, saveVisit, saveHard, setStar, restoreVisit, updateSettings }
 }
