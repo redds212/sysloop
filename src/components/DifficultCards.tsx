@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Attempt, Card, Category } from '../types'
 import { difficultCards, type DifficultFilter } from '../lib/difficult'
+import { DifficultStarButton } from './DifficultStarButton'
 import { AuctionView, CallText } from './AuctionView'
 
 export function DifficultCards({cards,categories,attempts,stars,onStart,onRead,onStar,busy}: {
@@ -19,7 +20,7 @@ export function DifficultCards({cards,categories,attempts,stars,onStart,onRead,o
       <p className="eyebrow">{categories.find(c=>c.slug===card.categorySlug)?.name}</p><AuctionView auction={card.auction} compact/>
       <p className="section-title">{card.section}</p>{card.context&&<p className="context-chip">{card.context}</p>}
       {lines.length>0&&<ul className="difficult-lines">{lines.map(({line,misses,appearances,lastMiss})=><li key={line.key}><CallText text={line.label}/> · {misses}/{appearances} błędnych · ostatnio {new Date(lastMiss).toLocaleDateString('pl-PL',{timeZone:'Europe/Warsaw'})}</li>)}</ul>}
-      <div className="secondary-actions"><button className="text-button" disabled={busy} aria-pressed={starred} onClick={()=>void onStar(card.id,!starred).catch(()=>{})}>{starred?'★ Usuń z moich':'☆ Dodaj do moich'}</button><button className="text-button" onClick={()=>onRead(card.id)}>Czytaj</button><button className="secondary" disabled={busy} onClick={()=>onStart([card.id])}>Ćwicz</button></div>
+      <div className="secondary-actions"><DifficultStarButton starred={starred} busy={busy} onToggle={()=>onStar(card.id,!starred)}/><button className="text-button" onClick={()=>onRead(card.id)}>Czytaj</button><button className="secondary" disabled={busy} onClick={()=>onStart([card.id])}>Ćwicz</button></div>
     </article>)}</div>
   </section>
 }

@@ -30,3 +30,11 @@ Kontrola końcowa:
 Stan danych odczytany 2026-09-22: import 1NT zastosowany przez właściciela,
 40 active i 3 draft. W tej zmianie nie wykonywano zapisów w Supabase.
 Pozostałe kategorie, M7 i M8 pozostają osobnymi etapami do ukończenia.
+
+## Doprecyzowanie interfejsu — 22.09.2026
+
+- Zamiast dodatkowego napisu nad znaczeniem: mała bursztynowa ikona ostrzeżenia obok odzywki, z etykietą dostępności i podpowiedzią „Poprzednio błąd”. Wiersze oznaczone i nieoznaczone mają tę samą wysokość.
+- Pasek Pokaż / Wszystko dobrze / Dalej jest przypięty do dołu również na desktopie; nie przykrywa bocznego menu. Dolny odstęp treści pozwala przewinąć ostatnią odpowiedź ponad pasek.
+- Wspólny przycisk trudnych sekwencji ma tekst 16 px i żółtą gwiazdkę 28 px: obrys przed zaznaczeniem, wypełnienie po zaznaczeniu.
+- Sprawdzone w podglądzie na wymyślonej karcie z 28 odzywkami, przy 1280 × 900 i 375 × 812. Przycisk oceny jest w obszarze widocznym, brak poziomego przepełnienia.
+- `npm test`: 169/169; lint i build: PASS. Pozostaje ostrzeżenie Vite o głównym fragmencie JS >500 kB (514,84 kB). Bez zmian harmonogramu, oceniania i bazy danych; nie potrzeba dodatkowej migracji.

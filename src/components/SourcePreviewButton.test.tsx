@@ -33,7 +33,7 @@ it('nie pobiera ani nie pokazuje oryginału przed odsłonięciem i kliknięciem;
 it('oznaczenie poprzedniego błędu nie jest zaznaczeniem błędu bieżącej próby',async()=>{
   const card=previewData().cards[4],rate=vi.fn().mockResolvedValue(undefined)
   render(<CardView card={card} previousMissed={[card.lines[0].key]} scope="partial" baseline={getDefaultEntry()} timed={false} phase="buffer" repository={previewRepository()} onRate={rate} onRevealed={()=>{}}/>)
-  expect(screen.getByText('Poprzednio błąd')).toBeTruthy()
+  expect(screen.getByRole('img',{name:'Poprzednio błąd'})).toBeTruthy()
   fireEvent.click(screen.getByRole('button',{name:'Pokaż'}))
   fireEvent.click(screen.getByRole('button',{name:'Wszystko dobrze'}))
   await waitFor(()=>expect(rate).toHaveBeenCalledTimes(1))

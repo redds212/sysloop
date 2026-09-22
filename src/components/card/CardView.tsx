@@ -10,6 +10,7 @@ import { Modal } from '../Modal'
 import { NotesView } from '../NotesView'
 import { SourcePreviewButton } from '../SourcePreviewButton'
 import { ReportCardButton } from '../ReportCardButton'
+import { Icon } from '../Icon'
 
 interface Props { previousMissed?: string[]; scope?: Attempt['scope']; card: Card; category?: Category; baseline: SRSEntry; timed: boolean; phase: AttemptPhase; repository: LearningRepository; onRate: (attempt: Attempt) => Promise<void>; onRevealed: () => void }
 const writingPreference='sysloop.write-meanings'
@@ -54,8 +55,10 @@ export function CardView({card,category,baseline,timed,phase,repository,onRate,o
       <p>{writing?'Zapisz skróty lub całe znaczenia. Kliknij odzywkę, gdy ją przemyślisz.':'Kliknij odzywkę lub puste pole, gdy przypomnisz sobie znaczenie.'} Ponowne kliknięcie usuwa znacznik.</p>
     </div>}
     <div className="line-list">{card.lines.map(line=><div key={line.key} className={`line-row ${previousMissed.includes(line.key)?'previous-miss':''} ${missed.includes(line.key)?'missed':''} ${!revealed&&considered.includes(line.key)?'considered':''}`}>
-      {previousMissed.includes(line.key)&&<small className="previous-miss-label">Poprzednio błąd</small>}
-      {!revealed?<button type="button" className="line-label recall-label" aria-label={`Przemyślana odzywka ${line.label}`} aria-pressed={considered.includes(line.key)} onClick={()=>toggleConsidered(line.key)}><CallText text={line.label}/></button>:<div className="line-label"><CallText text={line.label}/></div>}
+      <div className="call-label-group">
+        {!revealed?<button type="button" className="line-label recall-label" aria-label={`Przemyślana odzywka ${line.label}`} aria-pressed={considered.includes(line.key)} onClick={()=>toggleConsidered(line.key)}><CallText text={line.label}/></button>:<div className="line-label"><CallText text={line.label}/></div>}
+        {previousMissed.includes(line.key)&&<span className="previous-miss-icon" role="img" aria-label="Poprzednio błąd" title="Uważaj — poprzednio błąd"><Icon name="warning" size={14}/></span>}
+      </div>
       {!revealed?(writing?<div className="answer-input-wrap"><textarea className="answer-input" aria-label={`Twoje znaczenie: ${line.label}`} placeholder="Twoje znaczenie…" rows={1} maxLength={4000} value={answers[line.key]??''} onChange={e=>setAnswers(prev=>({...prev,[line.key]:e.target.value}))}/>{considered.includes(line.key)&&<span className="recall-check" aria-label="Przemyślane">✓</span>}</div>:<button type="button" className="meaning-blank" aria-label={`Przemyślane znaczenie ${line.label}`} aria-pressed={considered.includes(line.key)} onClick={()=>toggleConsidered(line.key)}><span aria-label="Znaczenie ukryte"/>{considered.includes(line.key)&&<small className="recall-check" aria-hidden="true">✓</small>}</button>):<div className={`meaning-content ${answers[line.key]?.trim()?'with-answer':''}`}>
         {answers[line.key]?.trim()&&<div className="own-answer"><small>Twój zapis</small><p className="verbatim">{answers[line.key]}</p></div>}
         <button disabled={timedOut||!!pending} className="meaning-button" aria-pressed={missed.includes(line.key)} onClick={()=>setMissed(prev=>prev.includes(line.key)?prev.filter(k=>k!==line.key):[...prev,line.key])}>

@@ -244,6 +244,7 @@ Owner UI clarification (2026-09-21): answer rows are about 20% more compact (54 
 **Rated** → next card (session) or the result state (free practice, 6.6).
 
 **Owner extension (2026-09-22):**
+- Owner UI refinement: show a compact amber warning icon beside the call (accessible label/tooltip **Poprzednio błąd**) instead of an extra text row. The primary action stays fixed at the bottom on desktop and mobile, with clearance for the last answer. The difficult-card toggle uses larger text and a 28 px yellow star, outlined before selecting and filled after selecting.
 - **Poprzednio błąd** marks the missed lines of the latest full attempt, visible before reveal. A full timeout marks all lines present in that attempt. A later correct full attempt clears the marks. Partial corrections and `hard` attempts never change them.
 - After reveal, **Oryginalny fragment** opens the source fragment, with **Cała strona** to show context. Read mode also offers it. Fetch source metadata/images only on opening this preview, never on the front. Preserve original local PDFs and uploaded page images. Crops use parser row coordinates, including continuation rows and notes; when geometry cannot identify a reliable fragment, show the full page with an explicit explanation. Source images may differ from subsequent in-app editorial corrections.
 
