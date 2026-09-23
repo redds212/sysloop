@@ -91,6 +91,23 @@ def test_hazard_two_column_stub():
     assert not flags
 
 
+@pytest.mark.parametrize('next_page',[1,2])
+def test_call_at_start_of_meaning_stays_with_previous_card(next_page):
+    result = parse(root_rows()+[
+        table_row('4D','wymyślony wariant',60),
+        table_row('4H','4S, wymyślona kontynuacja',74),
+        row('5C - 5D',110,page=next_page),row('?',127,page=next_page),
+        table_row('5H','nowa wymyślona odpowiedź',155,page=next_page)])
+    assert [l['key'] for l in result['cards'][0]['lines']] == ['4D','4H']
+    assert result['cards'][1]['auctionKey'] == '5C (P) 5D (P)'
+
+
+def test_large_vertical_gap_does_not_join_answer_and_new_stub():
+    result=parse(root_rows()+[table_row('4D','pas',60),row('5C - ?',110),table_row('5D','test',150)])
+    assert result['cards'][0]['lines'][0]['key']=='4D'
+    assert result['cards'][1]['auctionKey']=='5C (P)'
+
+
 def test_hazard_four_columns_parenthesized():
     calls,flags,_,_ = parse_stub([row('(3♦) - ktr - (pas) - 3♥'),row('(pas) - 3♠ - (pas) - ?')])
     assert auction_key(calls) == '(3D) X (P) 3H (P) 3S (P)'

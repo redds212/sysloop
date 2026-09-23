@@ -200,10 +200,19 @@ class Parser:
 
             # Collect consecutive geometrically valid stub rows before classifying call lines.
             stub = stub_cells(row)
+            candidate = line_candidate(row)
+            # A meaning beginning with a call is still in the meaning column.
+            # Do not consume it as the start of the next auction (also across pages).
+            if (stub and not any(c[1] == '?' for c in stub) and candidate
+                    and self.last_line and self.meaning_x is not None
+                    and candidate[2] is not None and candidate[2] >= self.meaning_x - 4):
+                stub = None
             if stub:
                 batch, j = [row], i + 1
                 has_question = any(c[1]=='?' for c in stub)
                 while not has_question and j < len(rows):
+                    if rows[j].page == batch[-1].page and rows[j].y - batch[-1].y > 25:
+                        break
                     following = stub_cells(rows[j])
                     if not following: break
                     batch.append(rows[j]); j += 1
