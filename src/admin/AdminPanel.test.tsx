@@ -85,7 +85,8 @@ describe('zapis karty',()=>{
     await waitFor(()=>expect(save).toHaveBeenCalledOnce())
     expect(save.mock.calls[0][1]).toBe(substantive)
     const updated=(await repository.load()).cards[0]
-    expect(!!updated.lines[0].changedAt).toBe(substantive)
+    if(substantive)expect(updated.lines[0].changedAt).not.toBe(card.lines[0].changedAt)
+    else expect(updated.lines[0].changedAt).toBe(card.lines[0].changedAt)
     const progress={status:'MASTERED' as const,consecutiveCorrect:4,interval:81,nextReviewDate:'2026-12-01',lastSeen:'2026-09-01T12:00:00Z'}
     expect(progressAfterEdit(progress,substantive,new Date('2026-09-17T23:30:00Z'))).toMatchObject({consecutiveCorrect:4,nextReviewDate:substantive?'2026-09-19':'2026-12-01'})
   })

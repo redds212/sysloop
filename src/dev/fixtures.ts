@@ -19,5 +19,6 @@ export function previewData():LearningData {
   const defense=makeCard('demo-3',[call('1S','they'),call('X'),call('2S','they','przykład')],['3C','3D','3H','3NT'],{categorySlug:'demo-defense',context:'Przykładowy warunek'})
   const long=makeCard('demo-4',[call('2NT')],Array.from({length:28},(_,i)=>`${Math.floor(i/5)+2}${['C','D','H','S','NT'][i%5]}`),{section:'DŁUGA POZYCJA — PODGLĄD'})
   const short=makeCard('demo-5',[call('3C')],['3D','3H'])
+  root.lines=root.lines.map((line,i)=>i<2?{...line,changedIn:'demo-2',changedAt:'2026-09-23T07:00:00Z',changeId:'demo-root-change-2'}:line)
   return {cards:[root,child,defense,long,short],categories,attempts:[],session:null,store:{[defense.id]:{status:'LEARNING',consecutiveCorrect:0,interval:1,lastSeen:new Date(Date.now()-86400000).toISOString(),nextReviewDate:addDaysKey(-1)},[short.id]:{status:'REVIEW',consecutiveCorrect:1,interval:3,lastSeen:new Date(Date.now()-4*86400000).toISOString(),nextReviewDate:addDaysKey(-1)}}}
 }

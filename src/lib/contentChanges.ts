@@ -20,7 +20,7 @@ export function stampChangedLines(previous: readonly CardLine[], next: readonly 
     const old = previous.find(l => l.key === line.key)
     const clean: CardLine = { key: line.key, label: line.label, bids: [...line.bids], meaning: line.meaning }
     const changed = !old || old.label !== line.label || old.meaning !== line.meaning || JSON.stringify(old.bids) !== JSON.stringify(line.bids)
-    if (substantive && changed) return { ...clean, changedIn: revision, changedAt: now.toISOString() }
-    return { ...clean, ...(old?.changedAt ? { changedAt: old.changedAt } : {}), ...(old?.changedIn ? { changedIn: old.changedIn } : {}) }
+    if (substantive && changed) return { ...clean, changedIn: revision, changedAt: now.toISOString(),changeId:crypto.randomUUID() }
+    return { ...clean, ...(old?.changedAt ? { changedAt: old.changedAt } : {}), ...(old?.changedIn ? { changedIn: old.changedIn } : {}), ...(old?.changeId?{changeId:old.changeId}:{}) }
   })
 }

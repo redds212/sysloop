@@ -5,7 +5,7 @@ export interface Category { slug: string; name: string; group: string; sortOrder
 export type CallToken = string
 export interface AuctionCall { side: Side; alts: CallToken[]; implicit?: true; qualifier?: string }
 export interface CardLine {
-  key: string; label: string; bids: CallToken[]; meaning: string; changedIn?: string; changedAt?: string
+  key: string; label: string; bids: CallToken[]; meaning: string; changedIn?: string; changedAt?: string; changeId?:string
 }
 export interface Card {
   id: string; categorySlug: string; section: string; sortOrder: number;
@@ -25,5 +25,5 @@ export interface UserSettings { dailyTarget: number; mode: LearningMode; timedMo
 export type AttemptPhase = 'main' | 'buffer' | 'free' | 'hard'
 export interface Attempt {
   cardId: string; correct: boolean; phase: AttemptPhase; missedLineKeys: string[] | null;
-  presentLineKeys: string[]; timedOut: boolean; lineCount: number; ts: string; scope?: 'full' | 'partial'
+  presentLineKeys: string[]; timedOut: boolean; lineCount: number; ts: string; scope?: 'full' | 'partial'; lineVersions?:Record<string,string>
 }

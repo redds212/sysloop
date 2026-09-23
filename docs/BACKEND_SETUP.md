@@ -23,6 +23,7 @@ W SQL Editor wykonaj całe pliki, po kolei:
 6. `supabase/migrations/0006_difficult_practice.sql`
 7. `supabase/migrations/0007_source_preview.sql`
 8. `supabase/migrations/0008_report_kinds.sql`
+9. `supabase/migrations/0009_revision_history.sql`
 
 Każdy plik ma transakcję oraz jest idempotentny. Nie ma seedów z treścią.
 Powstaną: profiles, categories, cards, srs_progress, attempts, daily_sessions,
@@ -103,3 +104,17 @@ Jeżeli wcześniejsze migracje są wykonane, wystarczy **0008_report_kinds.sql**
 4. W **Admin → Do dyskusji** sprawdź temat i wybrane odzywki. Dotychczasowe błędy pozostają w **Admin → Zgłoszenia**.
 
 Migracja zachowuje istniejące zgłoszenia i uprawnienia RLS. Oznaczenie tematu jako omówionego nie zmienia ustaleń ani harmonogramu. Agent przygotował plik, ale nie wykonał go na bazie. Przed aktywacją nowe tematy nie są zapisywane; formularz zachowuje tekst i wybór do ponowienia. Błędy można nadal zgłaszać. Lokalny podgląd z wymyślonymi danymi działa bez migracji.
+
+
+## Aktualizacja z 23 września: historia zmian i NEW (0009)
+
+Migracja 0008 została wykonana przez właściciela. Dla tego rozszerzenia uruchom tylko **0009_revision_history.sql**, przed zastosowaniem kolejnej wersji PDF:
+
+1. W Supabase wybierz projekt SysLoop → **SQL Editor → New query**.
+2. Wklej cały plik `supabase/migrations/0009_revision_history.sql` (łącznie z BEGIN i COMMIT), wybierz **Run**.
+3. Po wyniku bez błędów odśwież aplikację z opublikowaną nową wersją frontendową.
+4. Wejdź w **Trudne sekwencje → Ostatnio zmienione**. Początkowo lista może być pusta: dotychczasowe karty dostają ukryty punkt początkowy, bez NEW.
+5. Przy kolejnym PDF wykonujemy lokalne parse → weryfikacja → propose → upload. W **Admin → Importy** porównaj zmiany i wybierz **Zastosuj**. Dopiero wtedy zmieniają się ustalenia i powstaje historia.
+6. W historii sprawdź datę, Przed/Po i trening. Przy nowej odzywce Przed jest puste. NEW znika po pierwszej zapisanej ocenie tej wersji, także błędnej.
+
+Nie zmieniaj ręcznie RLS ani publiczności zasobnika. Migracja dodaje tabelę historii z RLS i wersje odzywek w próbach; zachowuje karty, postęp i konta. Testowana lokalnie w PostgreSQL w pamięci, również przy ponownym wykonaniu. Nie była uruchamiana przez agenta na projekcie Supabase. Historia starsza niż punkt uruchomienia migracji nie jest odtwarzana z parsera.

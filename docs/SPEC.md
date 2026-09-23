@@ -298,6 +298,12 @@ Owner extension (2026-09-22): `profiles.correction_mode` chooses **Cała pozycja
 
 ### 6.7 Effect of content changes on progress
 
+Owner extension (2026-09-23): each substantively changed/added call has a unique `changeId`. Show **NEW** until the user's first successfully saved grading of that exact version, including an incorrect answer, timeout or `hard` training. Partial attempts acknowledge only their present lines. Store `attempts.line_versions` alongside `present_line_keys`; earlier-version answers never acknowledge a later update. Cosmetic edits preserve the version marker. Existing cards at migration time receive a history baseline without NEW.
+
+**Trudne sekwencje → Ostatnio zmienione** lists substantive published changes for active cards, newest first, with Europe/Warsaw dates and before/after comparisons. Added lines have an empty before column; removed lines have an empty after column. Preserve successive revisions, including actual database corrections. The dedicated changes training uses current full cards, defaults to typed answers, and uses the existing `hard` phase without changing SRS. After reveal, marking a line wrong shows its previous agreement with an explicit obsolete label. Never infer correctness from typed text. Import remains local parse/verification/proposal/upload followed by **Admin → Importy → Zastosuj** approval.
+
+Migration 0009 stores published snapshots in `card_revisions`, in the same transaction as the edit/import. Draft intermediate contents stay private; approved users read history only for active cards, admins read all. Existing PDF source previews remain unchanged. The default shell heading is **System RJ-WG**.
+
 Owner clarification (2026-09-16): database-triggered “tomorrow” uses **Europe/Warsaw** for the group.
 
 - **Substantive** change to a card (from an import run or the admin editor): set `changedIn` / `changedAt` on changed and added lines; for every `srs_progress` row of that card with status ≠ NEW and `next_review_date` later than tomorrow → set `next_review_date = tomorrow` (step unchanged).

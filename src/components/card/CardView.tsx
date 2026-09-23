@@ -10,13 +10,17 @@ import { Modal } from '../Modal'
 import { NotesView } from '../NotesView'
 import { SourcePreviewButton } from '../SourcePreviewButton'
 import { Icon } from '../Icon'
+import { newLineKeys, previousLine } from '../../lib/revisions'
+import { useRevisions } from '../../hooks/useRevisions'
 
-interface Props { previousMissed?: string[]; scope?: Attempt['scope']; card: Card; category?: Category; baseline: SRSEntry; timed: boolean; phase: AttemptPhase; repository: LearningRepository; onRate: (attempt: Attempt) => Promise<void>; onRevealed: () => void }
+interface Props { attempts?:Attempt[];revisionTraining?:boolean;previousMissed?: string[]; scope?: Attempt['scope']; card: Card; category?: Category; baseline: SRSEntry; timed: boolean; phase: AttemptPhase; repository: LearningRepository; onRate: (attempt: Attempt) => Promise<void>; onRevealed: () => void }
 const writingPreference='sysloop.write-meanings'
-export function CardView({card,category,baseline,timed,phase,repository,onRate,onRevealed,previousMissed=[],scope='full'}:Props) {
+export function CardView({card,category,baseline,timed,phase,repository,onRate,onRevealed,previousMissed=[],scope='full',attempts=[],revisionTraining=false}:Props) {
   const [revealed,setRevealed]=useState(false), [timedOut,setTimedOut]=useState(false), [missed,setMissed]=useState<string[]>([])
   const [considered,setConsidered]=useState<string[]>([]),[answers,setAnswers]=useState<Record<string,string>>({})
-  const [writing,setWriting]=useState(()=>{try{return localStorage.getItem(writingPreference)==='true'}catch{return false}})
+  const [writing,setWriting]=useState(()=>{try{return revisionTraining||localStorage.getItem(writingPreference)==='true'}catch{return revisionTraining}})
+  const fresh=newLineKeys(card,attempts)
+  const history=useRevisions(repository,revisionTraining&&revealed,card.id)
   const [notes,setNotes]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[pending,setPending]=useState<Attempt|null>(null)
   const [loadedEntry]=useState(baseline)
   const expire=useCallback(()=>{setTimedOut(true);setRevealed(true);onRevealed()},[onRevealed])
@@ -61,6 +65,7 @@ export function CardView({card,category,baseline,timed,phase,repository,onRate,o
       <div className="call-label-group">
         {!revealed?<button type="button" className="line-label recall-label" aria-label={`Przemyślana odzywka ${line.label}`} aria-pressed={considered.includes(line.key)} onClick={()=>toggleConsidered(line.key)}><CallText text={line.label}/></button>:<div className="line-label"><CallText text={line.label}/></div>}
         {previousMissed.includes(line.key)&&<span className="previous-miss-icon" role="img" aria-label="Poprzednio błąd" title="Uważaj — poprzednio błąd"><Icon name="warning" size={14}/></span>}
+        {fresh.includes(line.key)&&<span className="new-chip" title="Nowe lub zmienione ustalenie — do pierwszej zapisanej oceny" aria-label={`Nowe ustalenie: ${line.label}`}>NEW</span>}
       </div>
       {!revealed?(writing?<div className="answer-input-wrap"><textarea className="answer-input" aria-label={`Twoje znaczenie: ${line.label}`} placeholder="Twoje znaczenie…" rows={1} maxLength={4000} value={answers[line.key]??''} onChange={e=>changeAnswer(line.key,e.target.value)}/>{considered.includes(line.key)&&<span className="recall-check" aria-label="Przemyślane">✓</span>}</div>:<button type="button" className="meaning-blank" aria-label={`Przemyślane znaczenie ${line.label}`} aria-pressed={considered.includes(line.key)} onClick={()=>toggleConsidered(line.key)}><span aria-label="Znaczenie ukryte"/>{considered.includes(line.key)&&<small className="recall-check" aria-hidden="true">✓</small>}</button>):<div className={`meaning-content ${answers[line.key]?.trim()?'with-answer':''}`}>
         {answers[line.key]?.trim()&&<div className="own-answer"><small>Twój zapis</small><p className="verbatim">{answers[line.key]}</p></div>}
@@ -69,8 +74,13 @@ export function CardView({card,category,baseline,timed,phase,repository,onRate,o
           <span className="verbatim">{line.meaning}</span>{changedSinceLoad(line,loadedEntry.lastSeen)&&<small className="change-chip">zmiana w {line.changedIn}</small>}
           <span className="mark" aria-hidden="true">{missed.includes(line.key)?'✕':'○'}</span>
         </button>
+        {revisionTraining&&(missed.includes(line.key)||timedOut)&&history.rows&&(()=>{
+          const previous=previousLine(history.rows,card,line.key)
+          return previous?<div className="previous-answer"><small>Poprzednie ustalenie — już nie obowiązuje</small><p className="verbatim">{previous.before?.meaning??''}</p>{!previous.before&&<small>Nowa odzywka — wcześniej bez ustalenia.</small>}</div>:null
+        })()}
       </div>}
     </div>)}</div>
+    {revisionTraining&&revealed&&(history.error?<p className="error-note" role="alert">{history.error} <button className="text-button" onClick={history.retry}>Ponów podgląd poprzednich ustaleń</button></p>:!history.rows?<p role="status">Wczytywanie poprzednich ustaleń…</p>:<p className="muted">Zaznacz błędną odzywkę, aby zobaczyć również poprzednie ustalenie.</p>)}
     {revealed&&(card.notes.length>0||card.auctionNote)&&<section className="notes-block"><h2>Uwagi</h2>{[...card.notes,...(card.auctionNote?[card.auctionNote]:[])].map((note,i)=><p className="verbatim" key={i}>{note}</p>)}</section>}
     {revealed&&<div className="secondary-actions"><SourcePreviewButton cardId={card.id} repository={repository}/>{category&&<button className="text-button" onClick={()=>setNotes(true)}>Notatki</button>}</div>}
     {error&&<p className="error-note" role="alert">{error}</p>}

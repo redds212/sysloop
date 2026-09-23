@@ -2,19 +2,20 @@ import type { AuctionCall, AttemptPhase, CardLine, CorrectionMode, LearningMode,
 import type { SourceMetadata } from './sourcePreview'
 import type { SessionSlot } from './session'
 import type { ReportKind, ReportLine } from './reporting'
+import type { CardRevision } from './revisions'
 import type { ImportRun, ImportDecisions } from '../admin/types'
 
 export type ProfileRow = { id: string; username: string; is_admin: boolean; status: 'pending' | 'approved'; daily_target: number; mode: LearningMode; timed_mode: boolean; correction_mode?: CorrectionMode; created_at: string }
 export type CategoryRow = { slug: string; name: string; group_name: string; sort_order: number; source_file: string; revision: string; notes: { title: string; body: string }[]; updated_at: string }
 export type CardRow = { id: string; category_slug: string; card_key: string; section: string; sort_order: number; auction: AuctionCall[]; auction_key: string; context: string | null; auction_note: string | null; notes: string[]; lines: CardLine[]; status: 'draft' | 'active' | 'archived'; review_flags: string[]; verification_note: string | null; source_page: number; source_revision: string; created_at: string; updated_at: string }
 export type SrsProgressRow = { user_id: string; card_id: string; status: SRSStatus; consecutive_correct: number; interval: number; next_review_date: string | null; last_seen: string | null; flag_difficult: boolean }
-export type AttemptRow = { id: number; user_id: string; card_id: string; correct: boolean; phase: AttemptPhase; scope?: 'full' | 'partial'; missed_line_keys: string[] | null; present_line_keys: string[]; timed_out: boolean; line_count: number; ts: string }
+export type AttemptRow = { id: number; user_id: string; card_id: string; correct: boolean; phase: AttemptPhase; scope?: 'full' | 'partial'; missed_line_keys: string[] | null; present_line_keys: string[]; timed_out: boolean; line_count: number; ts: string; line_versions?:Record<string,string> }
 export type DailySessionRow = { user_id: string; date: string; slots: SessionSlot[]; idx: number; buffer: string[]; buffer_index: number; in_buffer: boolean; correction_lines?: Record<string,string[]|null>; deferred_review_ids: string[]; target: number; mode: LearningMode; updated_at: string }
 export type ReportRow = { id: number; user_id: string | null; card_id: string; card_label: string; reporter_label: string; message: string; kind?: ReportKind; selected_lines?: ReportLine[]; status: 'new' | 'seen' | 'resolved'; created_at: string }
 type Table<Row> = { Row: Row; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] }
 type ImportRunRow = { [K in keyof ImportRun]: ImportRun[K] }
 export type Database = { public: {
-  Tables: { difficult_cards: Table<{user_id:string;card_id:string}>; profiles: Table<ProfileRow>; categories: Table<CategoryRow>; cards: Table<CardRow>; srs_progress: Table<SrsProgressRow>; attempts: Table<AttemptRow>; daily_sessions: Table<DailySessionRow>; card_reports: Table<ReportRow>; import_runs: Table<ImportRunRow> };
+  Tables: { card_revisions:Table<{[K in keyof CardRevision]:CardRevision[K]}>; difficult_cards: Table<{user_id:string;card_id:string}>; profiles: Table<ProfileRow>; categories: Table<CategoryRow>; cards: Table<CardRow>; srs_progress: Table<SrsProgressRow>; attempts: Table<AttemptRow>; daily_sessions: Table<DailySessionRow>; card_reports: Table<ReportRow>; import_runs: Table<ImportRunRow> };
   Views: Record<string, never>;
   Functions: {
     update_my_learning_settings: { Args: { p_daily_target: number; p_mode: string; p_timed_mode: boolean; p_correction_mode: string }; Returns: undefined };

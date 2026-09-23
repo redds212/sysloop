@@ -2,6 +2,7 @@ import type { AppUser, Attempt, Card, Category, SRSEntry, SRSStore, UserSettings
 import type { SourcePreview } from './sourcePreview'
 import type { SessionState } from './sessionState'
 import type { ReportKind } from './reporting'
+import type { CardRevision } from './revisions'
 
 export interface LearningData { cards: Card[]; categories: Category[]; store: SRSStore; attempts: Attempt[]; session: SessionState | null; starredCardIds?: string[]; correctionMode?: UserSettings['correctionMode']; practiceFeaturesAvailable?: boolean }
 export interface LearningRepository {
@@ -11,6 +12,7 @@ export interface LearningRepository {
   recordAttempt(attempt: Attempt): Promise<void>;
   saveSettings(settings: UserSettings): Promise<void>;
   sourcePreview?(cardId: string): Promise<SourcePreview | null>;
+  revisions?(cardId?:string):Promise<CardRevision[]>;
   setStar?(cardId: string, starred: boolean): Promise<void>;
   report(card: Card, category: Category | undefined, message: string, kind?: ReportKind, lineKeys?: string[]): Promise<void>;
 }

@@ -4,8 +4,9 @@ export function grade(card: Card, missed: readonly string[], timedOut: boolean, 
   if (!presentLineKeys.length || new Set(presentLineKeys).size !== presentLineKeys.length) throw new Error('Nieprawidłowe odzywki karty')
   if (!timedOut && missed.some(k => !presentLineKeys.includes(k))) throw new Error('Nieznany klucz odzywki')
   const missedLineKeys = timedOut ? null : [...new Set(missed)]
+  const lineVersions=Object.fromEntries(card.lines.filter(l=>l.changeId).map(l=>[l.key,l.changeId!]))
   return { cardId: card.id, correct: !timedOut && missedLineKeys!.length === 0, phase,
-    missedLineKeys, presentLineKeys, timedOut, lineCount: presentLineKeys.length, ts: now.toISOString() }
+    missedLineKeys, presentLineKeys, timedOut, lineCount: presentLineKeys.length, ts: now.toISOString(),...(Object.keys(lineVersions).length?{lineVersions}:{}) }
 }
 export function errorNoun(count: number): string {
   if (count === 1) return 'błąd'

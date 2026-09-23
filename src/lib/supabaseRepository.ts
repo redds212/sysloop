@@ -7,6 +7,7 @@ import { sessionFromSlots } from './session'
 import { sourceBounds } from './sourcePreview'
 import { compactAuction } from './auction/display'
 import { DiscussionsUnavailableError, selectedReportLines } from './reporting'
+import { RevisionHistoryUnavailableError } from './revisions'
 
 const checked = <T,>(result: { data: T; error: unknown }): T => {
   if (result.error) throw new Error('Nie udało się połączyć z bazą. Sprawdź połączenie i spróbuj ponownie.')
@@ -23,7 +24,7 @@ export async function allRows<T>(page: (from: number, to: number) => PromiseLike
 export const cardFromRow = (r: CardRow): Card => ({ id: r.id, categorySlug: r.category_slug, section: r.section, sortOrder: r.sort_order, auction: r.auction, auctionKey: r.auction_key, context: r.context ?? undefined, auctionNote: r.auction_note ?? undefined, notes: r.notes, lines: r.lines, status: r.status, reviewFlags: r.review_flags, verificationNote: r.verification_note ?? undefined, sourcePage: r.source_page, sourceRevision: r.source_revision })
 const categoryFromRow = (r: CategoryRow): Category => ({ slug: r.slug, name: r.name, group: r.group_name, sortOrder: r.sort_order, sourceFile: r.source_file, revision: r.revision, notes: r.notes })
 const entryFromRow = (r: SrsProgressRow): SRSEntry => ({ status: r.status, consecutiveCorrect: r.consecutive_correct, interval: r.interval, nextReviewDate: r.next_review_date, lastSeen: r.last_seen, flagDifficult: r.flag_difficult })
-const attemptFromRow = (r: AttemptRow): Attempt => ({ cardId: r.card_id, correct: r.correct, phase: r.phase, scope: r.scope ?? 'full', missedLineKeys: r.missed_line_keys, presentLineKeys: r.present_line_keys, timedOut: r.timed_out, lineCount: r.line_count, ts: r.ts })
+const attemptFromRow = (r: AttemptRow): Attempt => ({ cardId: r.card_id, correct: r.correct, phase: r.phase, scope: r.scope ?? 'full', missedLineKeys: r.missed_line_keys, presentLineKeys: r.present_line_keys, timedOut: r.timed_out, lineCount: r.line_count, ts: r.ts, ...(r.line_versions?{lineVersions:r.line_versions}:{}) })
 export const sessionFromRow = (r: DailySessionRow): SessionState => ({ session: sessionFromSlots(r.date, r.slots, r.deferred_review_ids, r.target, r.mode), index: Math.min(r.idx, r.slots.length), buffer: r.buffer, bufferIndex: Math.min(r.buffer_index, r.buffer.length), inBuffer: r.in_buffer, correctionLines: r.correction_lines ?? {} })
 
 export function createRepository(user: Pick<AppUser,'id'|'username'>): LearningRepository {
@@ -62,7 +63,7 @@ export function createRepository(user: Pick<AppUser,'id'|'username'>): LearningR
       if (!practiceFeaturesAvailable && (a.phase === 'hard' || a.scope === 'partial')) throw new Error('Zaktualizuj bazę danych.')
       const existing = checked(await supabase.from('attempts').select('id').eq('user_id',uid).eq('card_id',a.cardId).eq('ts',a.ts).limit(1))
       if (existing?.length) return
-      checked(await supabase.from('attempts').insert({ user_id: uid, card_id: a.cardId, correct: a.correct, phase: a.phase, ...(practiceFeaturesAvailable ? {scope:a.scope ?? 'full'} : {}), missed_line_keys: a.missedLineKeys, present_line_keys: a.presentLineKeys, timed_out: a.timedOut, line_count: a.lineCount, ts: a.ts }))
+      checked(await supabase.from('attempts').insert({ user_id: uid, card_id: a.cardId, correct: a.correct, phase: a.phase, ...(practiceFeaturesAvailable ? {scope:a.scope ?? 'full'} : {}), ...(a.lineVersions?{line_versions:a.lineVersions}:{}), missed_line_keys: a.missedLineKeys, present_line_keys: a.presentLineKeys, timed_out: a.timedOut, line_count: a.lineCount, ts: a.ts }))
     },
     async saveSettings(settings) {
       await ensurePracticeFeatures()
@@ -72,6 +73,15 @@ export function createRepository(user: Pick<AppUser,'id'|'username'>): LearningR
         if (settings.correctionMode === 'missed') throw new Error('Zaktualizuj bazę danych.')
         checked(await supabase.rpc('update_my_settings',args))
       }
+    },
+    async revisions(cardId) {
+      return allRows(async(a,b)=>{
+        let query=supabase.from('card_revisions').select('*').order('changed_at',{ascending:false}).order('id').range(a,b)
+        if(cardId)query=query.eq('card_id',cardId)
+        const result=await query
+        if(['42P01','PGRST205'].includes(result.error?.code??''))throw new RevisionHistoryUnavailableError()
+        return result
+      })
     },
     async sourcePreview(cardId) {
       const source=checked(await supabase.rpc('card_source',{p_card_id:cardId}))
