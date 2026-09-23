@@ -10,7 +10,7 @@ import { ReadView } from './components/ReadView'
 import { NotesView } from './components/NotesView'
 import { LearningSettings } from './components/LearningSettings'
 import { DifficultCards } from './components/DifficultCards'
-import { DifficultStarButton } from './components/DifficultStarButton'
+import { CardTools } from './components/CardTools'
 import { HardPractice } from './components/HardPractice'
 import { previousMissedKeys } from './lib/difficult'
 import { correctionCard } from './lib/sessionState'
@@ -42,7 +42,7 @@ export default function LearningApp({user,repository,journal,onLogout,onAdmin,ac
     {preview&&<div className="preview-banner">Podgląd · wymyślone karty · zapis tylko w tej przeglądarce</div>}
     <main className="main-content">
       {!practiceAvailable&&<p className="muted" role="status">Nowe tryby ćwiczeń czekają na aktualizację bazy danych przez administratora. Dotychczasowa nauka działa.</p>}
-      {card&&practiceAvailable&&<DifficultStarButton starred={stars.includes(card.id)} busy={busy} onToggle={()=>learning.setStar(card.id,!stars.includes(card.id))}/>}
+      {card&&<CardTools card={card} category={category} repository={repository} starred={stars.includes(card.id)} busy={busy} onStar={practiceAvailable?()=>learning.setStar(card.id,!stars.includes(card.id)):undefined}/>}
       {view.kind==='hard'&&practiceAvailable&&<DifficultCards cards={data.cards} categories={data.categories} attempts={data.attempts} stars={stars} busy={busy} onStar={learning.setStar} onRead={id=>open('read',id)} onStart={ids=>navigate({kind:'hardPractice',ids,visit:Date.now()})}/>}
       {view.kind==='hardPractice'&&practiceAvailable&&<HardPractice key={view.visit} cards={view.ids.flatMap(id=>data.cards.filter(c=>c.id===id))} categories={data.categories} attempts={data.attempts} stars={stars} onStar={learning.setStar} busy={busy} repository={repository} save={learning.saveHard} onFront={()=>setFront(true)} onRevealed={revealed} onFinish={()=>navigate({kind:'hard'})}/>}
 

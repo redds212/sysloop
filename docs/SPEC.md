@@ -229,6 +229,8 @@ Phases: `front` → `revealed` → `rated`.
 **Front**
 Owner UI clarification (2026-09-21): answer rows are about 20% more compact (54 px minimum instead of 67 px). Before reveal, tapping a call or its blank toggles a neutral “considered” marker; this is a memory aid, independent of grading. An optional **Wpisuj własne znaczenia** mode accepts free text per line. After reveal the user's text stays next to the system meaning (stacked on mobile) for self-comparison. Only the writing-mode preference is kept locally; texts and considered markers last for the current card attempt and are not sent to the backend. Blank or different text does not automatically fail a card; the existing missed-line and timeout rules remain in force.
 
+Owner UI clarification (2026-09-23): entering non-whitespace text automatically marks that line as considered; clearing it (including whitespace-only input) removes the marker. Clicking the call can still toggle it manually. Editing a non-empty answer marks it again. This does not grade the answer.
+
 - Breadcrumb: category · section.
 - Auction (5.1). Uncontested → rows of `otwierający | odpowiadający`. Contested → 4-column rows, the first column is the first caller.
 - Context chip, qualifier chips.
@@ -345,6 +347,7 @@ Follow BridgeLoop `UserPanel`: tiles (dni z rzędu, śr. dziennie, rozwiązanych
 
 ### 7.8 Zgłoś błąd
 Modal with a textarea (max 1,000 characters) → `card_reports` with a label snapshot (category · compact auction). Confirmation toast.
+Owner UI clarification (2026-09-23): a flag button **Zgłoś błąd** appears beside the difficult-card star above the position, both before and after reveal and in read/hard-practice modes. The form identifies the category, auction and context without revealing meanings. Failed submissions retain the draft for retry; switching cards clears the form. Reports use the existing admin **Zgłoszenia** list and its new/seen/resolved workflow.
 
 ### 7.9 Admin
 - **Użytkownicy**: as BridgeLoop (approve, admin flag, delete via edge function).

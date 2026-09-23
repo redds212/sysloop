@@ -2,6 +2,7 @@ import type { AdminRepository, ImportDecisions } from '../admin/types'
 import { adminFixtures } from './adminFixtures'
 import { stampChangedLines } from '../lib/contentChanges'
 import { effectiveLines } from '../admin/model'
+import { readPreviewReports, writePreviewReports } from './previewReports'
 
 export function adminPreviewRepository(storage?:Storage):AdminRepository {
   const key='sysloop:preview:admin'
@@ -10,7 +11,7 @@ export function adminPreviewRepository(storage?:Storage):AdminRepository {
   const persist=()=>storage?.setItem(key,JSON.stringify(state))
   const runById=(id:string)=>{const run=state.runs.find(r=>r.id===id);if(!run)throw new Error('Brak importu');return run}
   return {
-    async load(){return structuredClone({...state.data,runs:state.runs})},
+    async load(){return structuredClone({...state.data,reports:[...readPreviewReports(storage),...state.data.reports],runs:state.runs})},
     async getRun(id){return structuredClone(runById(id))},
     async saveCard(card,substantive,revision){
       const old=state.data.cards.find(c=>c.id===card.id)!
@@ -20,8 +21,8 @@ export function adminPreviewRepository(storage?:Storage):AdminRepository {
     async saveCategory(category){state.data.categories=state.data.categories.map(c=>c.slug===category.slug?structuredClone(category):c);persist()},
     async updateUser(id,patch){state.data.users=state.data.users.map(u=>u.id===id?{...u,...patch}:u);persist()},
     async deleteUser(id){state.data.users=state.data.users.filter(u=>u.id!==id);persist()},
-    async updateReport(id,status){state.data.reports=state.data.reports.map(r=>r.id===id?{...r,status}:r);persist()},
-    async deleteReport(id){state.data.reports=state.data.reports.filter(r=>r.id!==id);persist()},
+    async updateReport(id,status){state.data.reports=state.data.reports.map(r=>r.id===id?{...r,status}:r);writePreviewReports(storage,readPreviewReports(storage).map(r=>r.id===id?{...r,status}:r));persist()},
+    async deleteReport(id){state.data.reports=state.data.reports.filter(r=>r.id!==id);writePreviewReports(storage,readPreviewReports(storage).filter(r=>r.id!==id));persist()},
     async applyRun(id,decisions:ImportDecisions){
       const run=runById(id)
       if(run.status!=='pending')throw new Error('Import nie oczekuje na decyzję')
