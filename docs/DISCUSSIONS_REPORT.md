@@ -8,9 +8,9 @@ Główne pliki: `src/components/ReportCardButton.tsx`, `CardTools.tsx`, `src/adm
 
 ## Baza i publikacja
 
-Przygotowano idempotentną migrację `supabase/migrations/0008_report_kinds.sql`: rodzaj wpisu `error/discussion` i lista wybranych odzywek. Poprzednie wpisy pozostają błędami; dostęp jest taki sam jak dla istniejących zgłoszeń. Migracja nie została wykonana na Supabase. Instrukcja: ostatnia sekcja `docs/BACKEND_SETUP.md`.
+Przygotowano idempotentną migrację `supabase/migrations/0008_report_kinds.sql`: rodzaj wpisu `error/discussion` i lista wybranych odzywek. Poprzednie wpisy pozostają błędami; dostęp jest taki sam jak dla istniejących zgłoszeń. Właściciel potwierdził wykonanie migracji 0008 bez błędów i zlecił kontynuację publikacji. Agent nie wykonywał SQL. Instrukcja: ostatnia sekcja `docs/BACKEND_SETUP.md`.
 
-Do testów lokalnych użyj `http://localhost:5175/?preview=learning`. Podgląd nie wymaga migracji i niczego nie wysyła do produkcyjnej bazy. Prawdziwy zapis dyskusji wymaga 0008. Przed aktywacją formularz zachowuje wpis po nieudanej wysyłce i nie zamienia tematu na zgłoszenie błędu. Tę wersję pozostawiono lokalnie do testów przed publikacją.
+Do testów lokalnych użyj `http://localhost:5175/?preview=learning`. Podgląd nie wymaga migracji i niczego nie wysyła do produkcyjnej bazy. Prawdziwy zapis dyskusji wymaga 0008. Przed aktywacją formularz zachowuje wpis po nieudanej wysyłce i nie zamienia tematu na zgłoszenie błędu. Po potwierdzeniu migracji wersja jest przekazywana na master do publikacji przez istniejący workflow GitHub Pages.
 
 ## Weryfikacja
 
