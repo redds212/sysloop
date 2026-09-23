@@ -15,6 +15,7 @@ import type { CSSProperties, ReactNode } from 'react';
  * i strzałki rozwijania.
  */
 const PATHS = {
+  discussion: <><path d="M21 11a8 8 0 0 1-8 8H7l-5 3 2-6a8 8 0 0 1-1-5 8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z"/><path d="M7 9h10M7 13h6"/></>,
   warning: <><path d="M12 3 22 21H2L12 3Z" /><path d="M12 9v5" /><path d="M12 17h.01" /></>,
   star: <path d="m12 3 2.8 5.7 6.3.9-4.55 4.45 1.07 6.28L12 17.37l-5.62 2.96 1.07-6.28L2.9 9.6l6.3-.9L12 3Z" />,
   menu: (

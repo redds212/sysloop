@@ -31,6 +31,7 @@
 .source-page img { display:block; max-width:100%; height:auto; margin:12px auto; }
 .admin-empty { color:#8a97ad; padding:40px 0; }
 .admin-report-link { font-size:16px; color:#34d399; text-align:left; }
+.admin-discussion-lines { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:12px 0; }
 .import-line-diff { padding:16px 0; border-bottom:1px solid #ffffff10; font-size:13px; }
 .import-line-diff.changed,.import-line-diff.added { border-left:2px solid #fbbf24; padding-left:12px; }
 .import-line-diff.removed { border-left:2px solid #e0524d; padding-left:12px; }

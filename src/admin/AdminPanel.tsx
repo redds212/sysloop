@@ -9,7 +9,7 @@ import { CategoriesAdmin } from './CategoriesAdmin'
 import { ImportsAdmin } from './ImportsAdmin'
 import './admin.css'
 
-const tabs={cards:'Karty',users:'Użytkownicy',reports:'Zgłoszenia',imports:'Importy',categories:'Kategorie'}
+const tabs={cards:'Karty',users:'Użytkownicy',reports:'Zgłoszenia',discussions:'Do dyskusji',imports:'Importy',categories:'Kategorie'}
 export function AdminPanel({user,repository,onBack,preview=false}: {user:AppUser;repository:AdminRepository;onBack:()=>void;preview?:boolean}) {
   const [tab,setTab]=useState<keyof typeof tabs>('cards'), [editing,setEditing]=useState<string|null>(null)
   const [data,setData]=useState<AdminData|null>(null), [error,setError]=useState(''), [notice,setNotice]=useState(''), [busy,setBusy]=useState(false)
@@ -55,7 +55,7 @@ export function AdminPanel({user,repository,onBack,preview=false}: {user:AppUser
       {data&&card?<CardEditor key={card.id} card={card} cards={data.cards} repository={repository} busy={writing} onBack={()=>setEditing(null)} save={(value,substantive,revision)=>act(()=>repository.saveCard(value,substantive,revision),'Karta została zapisana.')}/>:data&&<>
         {tab==='cards'&&<CardsAdmin cards={data.cards} categories={data.categories} onEdit={edit}/>}
         {tab==='users'&&<UsersAdmin users={data.users} currentId={user.id} busy={writing} update={(id,patch)=>act(()=>repository.updateUser(id,patch),'Uprawnienia użytkownika zostały zapisane.')} remove={id=>act(()=>repository.deleteUser(id),'Konto zostało usunięte.')}/>}
-        {tab==='reports'&&<ReportsAdmin reports={data.reports} busy={writing} onEdit={edit} update={(id,status)=>act(()=>repository.updateReport(id,status),'Status zgłoszenia został zapisany.')} remove={id=>act(()=>repository.deleteReport(id),'Zgłoszenie zostało usunięte.')}/>}
+        {(tab==='reports'||tab==='discussions')&&<ReportsAdmin key={tab} kind={tab==='discussions'?'discussion':'error'} reports={data.reports} busy={writing} onEdit={edit} update={(id,status)=>act(()=>repository.updateReport(id,status),tab==='discussions'?'Status tematu został zapisany.':'Status zgłoszenia został zapisany.')} remove={id=>act(()=>repository.deleteReport(id),tab==='discussions'?'Temat został usunięty.':'Zgłoszenie zostało usunięte.')}/>}
         {tab==='categories'&&<CategoriesAdmin categories={data.categories} busy={writing} onEditing={setCategoryEditing} save={c=>act(()=>repository.saveCategory(c),'Kategoria została zapisana.')}/>}
         {tab==='imports'&&<ImportsAdmin runs={data.runs} cards={data.cards} repository={repository} busy={writing} apply={(id,decisions)=>act(()=>repository.applyRun(id,decisions),'Import został zastosowany.')} discard={id=>act(()=>repository.discardRun(id),'Import został odrzucony.')}/>}
       </>}

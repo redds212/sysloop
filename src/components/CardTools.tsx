@@ -10,5 +10,6 @@ export function CardTools({card,category,repository,starred,busy,onStar}: {
   return <div className="card-tools" role="group" aria-label="Akcje pozycji">
     {onStar&&<DifficultStarButton starred={starred} busy={busy} onToggle={onStar}/>}
     <ReportCardButton key={card.id} card={card} category={category} repository={repository}/>
+    <ReportCardButton key={`${card.id}:discussion`} kind="discussion" card={card} category={category} repository={repository}/>
   </div>
 }

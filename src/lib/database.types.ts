@@ -1,6 +1,7 @@
 import type { AuctionCall, AttemptPhase, CardLine, CorrectionMode, LearningMode, SRSStatus } from '../types'
 import type { SourceMetadata } from './sourcePreview'
 import type { SessionSlot } from './session'
+import type { ReportKind, ReportLine } from './reporting'
 import type { ImportRun, ImportDecisions } from '../admin/types'
 
 export type ProfileRow = { id: string; username: string; is_admin: boolean; status: 'pending' | 'approved'; daily_target: number; mode: LearningMode; timed_mode: boolean; correction_mode?: CorrectionMode; created_at: string }
@@ -9,7 +10,7 @@ export type CardRow = { id: string; category_slug: string; card_key: string; sec
 export type SrsProgressRow = { user_id: string; card_id: string; status: SRSStatus; consecutive_correct: number; interval: number; next_review_date: string | null; last_seen: string | null; flag_difficult: boolean }
 export type AttemptRow = { id: number; user_id: string; card_id: string; correct: boolean; phase: AttemptPhase; scope?: 'full' | 'partial'; missed_line_keys: string[] | null; present_line_keys: string[]; timed_out: boolean; line_count: number; ts: string }
 export type DailySessionRow = { user_id: string; date: string; slots: SessionSlot[]; idx: number; buffer: string[]; buffer_index: number; in_buffer: boolean; correction_lines?: Record<string,string[]|null>; deferred_review_ids: string[]; target: number; mode: LearningMode; updated_at: string }
-export type ReportRow = { id: number; user_id: string | null; card_id: string; card_label: string; reporter_label: string; message: string; status: 'new' | 'seen' | 'resolved'; created_at: string }
+export type ReportRow = { id: number; user_id: string | null; card_id: string; card_label: string; reporter_label: string; message: string; kind?: ReportKind; selected_lines?: ReportLine[]; status: 'new' | 'seen' | 'resolved'; created_at: string }
 type Table<Row> = { Row: Row; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] }
 type ImportRunRow = { [K in keyof ImportRun]: ImportRun[K] }
 export type Database = { public: {

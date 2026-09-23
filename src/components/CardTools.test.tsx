@@ -6,6 +6,9 @@ import { previewData } from '../dev/fixtures'
 import { previewRepository } from '../dev/previewRepository'
 import { adminPreviewRepository } from '../dev/adminRepository'
 import { ReportsAdmin } from '../admin/ReportsAdmin'
+import { AdminPanel } from '../admin/AdminPanel'
+import { adminPreviewUser } from '../dev/adminFixtures'
+import { DiscussionsUnavailableError } from '../lib/reporting'
 
 beforeAll(()=>{
   HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')}
@@ -50,11 +53,66 @@ it('błąd wysyłki zachowuje tekst do ponowienia; zmiana karty czyści formular
   expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Test ponowienia')
   fireEvent.click(screen.getByRole('button',{name:'Wyślij zgłoszenie'}))
   await screen.findByRole('status')
-  expect(repository.report).toHaveBeenLastCalledWith(cards[0],undefined,'Test ponowienia')
+  expect(repository.report).toHaveBeenLastCalledWith(cards[0],undefined,'Test ponowienia','error',[])
   fireEvent.click(screen.getByRole('button',{name:'Zgłoś błąd'}))
   fireEvent.change(screen.getByRole('textbox'),{target:{value:'Szkic poprzedniej karty'}})
   view.rerender(<CardTools card={cards[1]} repository={repository} starred={false} busy={false}/>)
   expect(screen.queryByRole('dialog')).toBeNull()
   fireEvent.click(screen.getByRole('button',{name:'Zgłoś błąd'}))
   expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('')
+})
+
+it('temat z wybranymi odzywkami trafia tylko do dyskusji i zachowuje zakres po zamknięciu',async()=>{
+  const card=previewData().cards[0],repository=previewRepository(sessionStorage)
+  render(<CardTools card={card} repository={repository} starred={false} busy={false}/>)
+  fireEvent.click(screen.getByRole('button',{name:'Do dyskusji'}))
+  fireEvent.change(screen.getByRole('textbox'),{target:{value:'Testowa propozycja innego ustalenia'}})
+  fireEvent.click(screen.getByRole('radio',{name:'Wybrane odzywki'}))
+  const submit=screen.getByRole('button',{name:'Dodaj do dyskusji'}) as HTMLButtonElement
+  expect(submit.disabled).toBe(true)
+  for(const line of [card.lines[0],card.lines[2]])fireEvent.click(screen.getByRole('checkbox',{name:`Do dyskusji: ${line.label}`}))
+  expect(submit.disabled).toBe(false)
+  expect(screen.queryByText(card.lines[0].meaning)).toBeNull()
+  fireEvent.click(submit)
+  await screen.findByText('Temat dodany do dyskusji.')
+  const admin=adminPreviewRepository(sessionStorage)
+  const report=(await admin.load()).reports.find(r=>r.kind==='discussion')!
+  expect(report.selected_lines).toEqual([card.lines[0],card.lines[2]].map(({key,label})=>({key,label})))
+  cleanup()
+  render(<AdminPanel user={adminPreviewUser} repository={admin} onBack={()=>{}}/>)
+  await screen.findByRole('heading',{name:'Karty'})
+  fireEvent.click(screen.getByRole('button',{name:'Zgłoszenia'}))
+  expect(screen.queryByText(report.message)).toBeNull()
+  expect(screen.getByText('Wymyślone zgłoszenie: sprawdź opis pierwszej odzywki.')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button',{name:'Do dyskusji'}))
+  expect(screen.queryByText('Wymyślone zgłoszenie: sprawdź opis pierwszej odzywki.')).toBeNull()
+  expect(screen.getByText(report.message)).toBeTruthy()
+  expect(screen.getByText('Odzywki do omówienia:')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button',{name:'Omówione'}))
+  await waitFor(()=>expect(screen.queryByText(report.message)).toBeNull())
+  fireEvent.click(screen.getByRole('checkbox',{name:'Pokaż również omówione'}))
+  expect(screen.getByText(report.message)).toBeTruthy()
+  expect((await admin.load()).reports.find(r=>r.id===report.id)).toMatchObject({status:'resolved',selected_lines:report.selected_lines})
+  fireEvent.click(screen.getByRole('button',{name:'Otwórz ponownie'}))
+  await screen.findByText('Do omówienia')
+  fireEvent.click(screen.getByRole('button',{name:report.card_label.trim()}))
+  expect(screen.getByLabelText('Znaczenie 1')).toBeTruthy()
+})
+
+it('brak aktywacji dyskusji zachowuje wybrane odzywki i tekst, bez zapisu jako błąd',async()=>{
+  const card=previewData().cards[0],repository=previewRepository()
+  repository.report=vi.fn().mockRejectedValue(new DiscussionsUnavailableError())
+  render(<CardTools card={card} repository={repository} starred={false} busy={false}/>)
+  fireEvent.click(screen.getByRole('button',{name:'Do dyskusji'}))
+  fireEvent.click(screen.getByRole('radio',{name:'Wybrane odzywki'}))
+  fireEvent.click(screen.getByRole('checkbox',{name:`Do dyskusji: ${card.lines[0].label}`}))
+  fireEvent.change(screen.getByRole('textbox'),{target:{value:'Testowy temat'}})
+  fireEvent.click(screen.getByRole('button',{name:'Dodaj do dyskusji'}))
+  expect((await screen.findByRole('alert')).textContent).toContain('czeka na aktywację')
+  expect(screen.queryByRole('status')).toBeNull()
+  expect((screen.getByRole('checkbox',{name:`Do dyskusji: ${card.lines[0].label}`}) as HTMLInputElement).checked).toBe(true)
+  expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Testowy temat')
+  fireEvent.click(screen.getByRole('radio',{name:'Cała pozycja'}))
+  fireEvent.click(screen.getByRole('button',{name:'Dodaj do dyskusji'}))
+  await waitFor(()=>expect(repository.report).toHaveBeenLastCalledWith(card,undefined,'Testowy temat','discussion',[]))
 })

@@ -22,6 +22,7 @@ W SQL Editor wykonaj całe pliki, po kolei:
 5. `supabase/migrations/0005_import_runs.sql`
 6. `supabase/migrations/0006_difficult_practice.sql`
 7. `supabase/migrations/0007_source_preview.sql`
+8. `supabase/migrations/0008_report_kinds.sql`
 
 Każdy plik ma transakcję oraz jest idempotentny. Nie ma seedów z treścią.
 Powstaną: profiles, categories, cards, srs_progress, attempts, daily_sessions,
@@ -91,3 +92,14 @@ Jeżeli kroki 1–5 były już wykonane, uruchom tylko pliki **0006**, następni
 - Dla obecnego 1NT obrazy są już przesłane. Zachowujemy pliki w `sys files/` oraz obrazy w prywatnym zasobniku; nie trzeba przesyłać pełnego PDF-a.
 - Sprawdź na zatwierdzonym koncie zapis gwiazdki, wznowienie krótkiej poprawki i źródło; na innym koncie gwiazdki i próby mają być niezależne. Pending/anon nie mogą pobierać źródeł.
 - Przed 0006 dotychczasowa nauka działa, nowe tryby pozostają wyłączone z informacją o aktualizacji. Nie uruchamiano tych migracji automatycznie.
+
+## Aktualizacja z 23 września: osobna lista „Do dyskusji”
+
+Jeżeli wcześniejsze migracje są wykonane, wystarczy **0008_report_kinds.sql**:
+
+1. W projekcie SysLoop w Supabase otwórz **SQL Editor → New query**.
+2. Wklej cały plik `supabase/migrations/0008_report_kinds.sql` i wybierz **Run**.
+3. Odśwież SysLoop. Przy pozycji wybierz **Do dyskusji**, następnie **Cała pozycja** albo **Wybrane odzywki**, wpisz temat i zatwierdź.
+4. W **Admin → Do dyskusji** sprawdź temat i wybrane odzywki. Dotychczasowe błędy pozostają w **Admin → Zgłoszenia**.
+
+Migracja zachowuje istniejące zgłoszenia i uprawnienia RLS. Oznaczenie tematu jako omówionego nie zmienia ustaleń ani harmonogramu. Agent przygotował plik, ale nie wykonał go na bazie. Przed aktywacją nowe tematy nie są zapisywane; formularz zachowuje tekst i wybór do ponowienia. Błędy można nadal zgłaszać. Lokalny podgląd z wymyślonymi danymi działa bez migracji.

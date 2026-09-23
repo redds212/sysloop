@@ -157,6 +157,16 @@ textarea,select { background:#0b1220; border:1px solid #334155; padding:12px; bo
 .report-button { display:inline-flex; align-items:center; gap:8px; min-height:48px; padding:8px 12px; border:1px solid #ffffff1f; border-radius:9px; background:#1b2740; color:#dce5f1; font-size:14px; }
 .report-button svg { flex:none; color:#f08c82; }
 .report-button:hover { background:#27334a; border-color:#f08c8266; }
+.discussion-button svg { color:#7cb9f5; }
+.discussion-button:hover { border-color:#7cb9f566; }
+.discussion-scope { margin:0 0 20px; padding:0; border:0; min-width:0; }
+.discussion-scope legend { margin-bottom:8px; font-weight:600; }
+.discussion-scope-options, .discussion-lines { display:flex; flex-wrap:wrap; gap:8px; }
+.discussion-scope label { display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:8px 10px; cursor:pointer; }
+.discussion-scope input { width:18px; height:18px; margin:0; accent-color:#7cb9f5; }
+.discussion-lines { margin:8px 0; }
+.discussion-lines label { border:1px solid #ffffff1f; border-radius:8px; background:#0b1220; }
+.discussion-lines label:has(:checked) { border-color:#7cb9f5; background:#1b304b; }
 .report-position { display:grid; gap:10px; padding:14px; margin-bottom:12px; background:#0b1220; border:1px solid #ffffff12; border-radius:9px; }
 .report-hint { margin-bottom:18px; }
 .difficult-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 16px; }

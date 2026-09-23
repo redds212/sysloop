@@ -6,6 +6,7 @@ import type { SessionState } from './sessionState'
 import { sessionFromSlots } from './session'
 import { sourceBounds } from './sourcePreview'
 import { compactAuction } from './auction/display'
+import { DiscussionsUnavailableError, selectedReportLines } from './reporting'
 
 const checked = <T,>(result: { data: T; error: unknown }): T => {
   if (result.error) throw new Error('Nie udało się połączyć z bazą. Sprawdź połączenie i spróbuj ponownie.')
@@ -90,9 +91,13 @@ export function createRepository(user: Pick<AppUser,'id'|'username'>): LearningR
       if (starred) checked(await supabase.from('difficult_cards').upsert({user_id:uid,card_id:cardId},{onConflict:'user_id,card_id',ignoreDuplicates:true}))
       else checked(await supabase.from('difficult_cards').delete().eq('user_id',uid).eq('card_id',cardId))
     },
-    async report(card, category, message) {
+    async report(card, category, message, kind='error', lineKeys=[]) {
       // Reports are insert-only for members: do not append .select().
-      checked(await supabase.from('card_reports').insert({ user_id: uid, card_id: card.id, card_label: `${category?.name ?? ''} · ${compactAuction(card.auction)}`, reporter_label: user.username, message }))
+      // Omit the default kind so error reports also work before migration 0008.
+      const selected_lines=selectedReportLines(card,kind,lineKeys)
+      const result=await supabase.from('card_reports').insert({ user_id: uid, card_id: card.id, card_label: `${category?.name ?? ''} · ${compactAuction(card.auction)}`, reporter_label: user.username, message, ...(kind==='discussion'?{kind,selected_lines}:{}) })
+      if(kind==='discussion'&&['42703','PGRST204'].includes(result.error?.code??'')&&/kind|selected_lines/.test(result.error?.message??''))throw new DiscussionsUnavailableError()
+      checked(result)
     },
   }
 }
