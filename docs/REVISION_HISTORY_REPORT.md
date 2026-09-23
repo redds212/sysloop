@@ -1,5 +1,9 @@
 # Historia zmian — raport 23 września 2026
 
+## Potwierdzenie produkcji
+
+Właściciel potwierdził wykonanie migracji 0009 dnia 23 września 2026. Frontend commit `44f02e9` opublikowano na https://system.bridgeloop.pl/; GitHub Actions run `35882484833` zakończony sukcesem. Odczyt publicznej strony zwrócił HTTP 200 i nowy pakiet z nagłówkiem System RJ-WG oraz Ostatnio zmienione. Nie wykonano próbnej zmiany rzeczywistych ustaleń na produkcji.
+
 ## Gotowe
 
 - `supabase/migrations/0009_revision_history.sql`: transakcyjna historia publikacji, punkt początkowy dla istniejących kart, RLS oraz wersje odzywek w próbach. Merytoryczne i kosmetyczne edycje są rozróżniane. Szkice nie trafiają do historii dostępnej uczestnikom.

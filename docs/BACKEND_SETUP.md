@@ -108,6 +108,8 @@ Migracja zachowuje istniejące zgłoszenia i uprawnienia RLS. Oznaczenie tematu 
 
 ## Aktualizacja z 23 września: historia zmian i NEW (0009)
 
+**Status: właściciel potwierdził wykonanie 0009 dnia 23 września 2026; frontend opublikowany. Poniższe kroki pozostają instrukcją dla kolejnego środowiska.**
+
 Migracja 0008 została wykonana przez właściciela. Dla tego rozszerzenia uruchom tylko **0009_revision_history.sql**, przed zastosowaniem kolejnej wersji PDF:
 
 1. W Supabase wybierz projekt SysLoop → **SQL Editor → New query**.

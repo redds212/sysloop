@@ -1,6 +1,6 @@
 # Aktualizacja systemu i trening zmian
 
-Stan: rozszerzenie zaimplementowane lokalnie 23 września 2026. Przed aktywacją produkcyjną właściciel wykonuje migrację 0009 zgodnie z BACKEND_SETUP.md. Nie zastosowano nowego PDF ani migracji na zdalnej bazie.
+Stan: rozszerzenie opublikowane 23 września 2026. Właściciel potwierdził wykonanie migracji 0009. Nie zastosowano nowego PDF; kolejne zatwierdzone aktualizacje będą zapisywać historię. Agent nie wykonywał migracji na zdalnej bazie.
 
 ## Przepływ
 
