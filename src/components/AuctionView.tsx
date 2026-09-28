@@ -1,11 +1,11 @@
 import type { AuctionCall, Suit } from '../types'
 import { displayToken } from '../lib/auction/display'
-import { suitColor } from '../lib/suitColors'
+import { SuitSymbol } from './SuitSymbol'
 
 export function CallText({ text }: { text: string }) {
-  return <>{text.split(/([♣♦♥♠])/).map((part,i) => {
+  return <>{text.split(/([♣♦♥♠])[\uFE0E\uFE0F]?/).map((part,i) => {
     const suit = ({'♣':'C','♦':'D','♥':'H','♠':'S'} as Record<string,Suit>)[part]
-    return suit ? <span key={i} style={{color:suitColor(suit)}}>{part}</span> : part
+    return suit ? <SuitSymbol key={i} suit={suit}/> : part
   })}</>
 }
 export function AuctionView({ auction, compact=false, question=true }: { auction: AuctionCall[]; compact?: boolean; question?: boolean }) {

@@ -553,6 +553,8 @@ GitHub Actions → GitHub Pages, as BridgeLoop (secrets `VITE_SUPABASE_URL`, `VI
 
 ## 12. Visual direction
 
+- Owner refinement (2026-09-28): call labels and auction suit symbols use inline SVG rather than platform glyphs, preventing iOS emoji fonts from overriding their colours. The mobile palette uses clubs `#22c55e` and spades `#5278da` for clear separation on dark panels; desktop keeps the original palette at the existing md breakpoint. Hearts and diamonds retain their colours. Accessible/copyable suit text is preserved; source content is unchanged.
+
 - Family resemblance with BridgeLoop, not a copy. Brand tokens: `bg #0b1220`, `panel #131c2e`, `soft #1b2740`, `line rgba(255,255,255,.09)`, `text #e8edf5`, `dim #8a97ad`, `accent #10b981`, `accent-soft #34d399`, `accent-2 #fbbf24`, `danger #e0524d`. Fonts: Space Grotesk (display, call labels), Manrope (UI and meanings), IBM Plex Mono (section headers, counters). 4-colour suits on panels: ♠ `#5b9be8`, ♥ `#e0524d`, ♦ `#df8a2e`, ♣ `#36ad63`.
 - No green felt: this app is about text. Cards are panels.
 - Card layout: label column (Space Grotesk, about 64 px wide, coloured suits) + meaning column (Manrope 15 px, line-height 1.45). Blank meanings are soft rounded bars of equal height. Missed line: red left border + ✗. Changed line: amber chip.
