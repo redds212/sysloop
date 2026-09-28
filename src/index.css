@@ -209,6 +209,10 @@ textarea,select { background:#0b1220; border:1px solid #334155; padding:12px; bo
 .tree-position.progress-mastered { background: rgba(16,185,129,.18); border-left-color: #10b981; }
 .tree-position.progress-mastered > button:first-child { color: #9cedc9; }
 .tree-position.progress-learning { border-left-color: #e0524d; }
+.continue-session { grid-column: 1 / -1; display: grid; gap: 12px; width: 100%; }
+.continue-session p { margin: 0; }
+.continue-session .primary { justify-self: start; max-width: 100%; white-space: normal; }
+.result-panel .continue-session .primary { justify-self: center; }
 .source-fragment { margin-top: 20px; }
 .source-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .source-image { margin-top: 8px; background: white; border-radius: 4px; }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { adminFixtures } from '../dev/adminFixtures'
-import { effectiveLines, lineDiff, prepareCard, type CallDraft } from './model'
+import { effectiveLines, lineDiff, prepareCard, supersededAt, requireRemovalDecisions, importLineDiff, type CallDraft } from './model'
+import { adminPreviewRepository } from '../dev/adminRepository'
 
 function draft() {
   const {data,runs}=adminFixtures(), card=data.cards[0]
@@ -9,6 +10,32 @@ function draft() {
   return {data,runs,card,calls,lines}
 }
 describe('edytor i porównanie importu',()=>{
+  it('legacy zaczyna się przy zastosowaniu kolejnej wersji, nie przy uploadzie',()=>{
+    const run=adminFixtures().runs[0]
+    const first={...run,id:'a',status:'applied' as const,applied_at:'2026-09-20T22:30:00Z'}
+    const second={...first,id:'b',applied_at:'2026-09-24T22:30:00Z'}
+    const third={...first,id:'c',applied_at:'2026-09-26T10:00:00Z'}
+    const runs=[third,{...third,id:'other',category_slug:'different'},run,{...third,id:'discarded',status:'discarded' as const},first,second]
+    expect(supersededAt(first,runs)).toBe(second.applied_at)
+    expect(supersededAt(second,runs)).toBe(third.applied_at)
+    expect(supersededAt(third,runs)).toBeNull()
+    expect(supersededAt(run,runs)).toBeNull()
+  })
+  it('zniknięcie karty wymaga jawnej decyzji, zachowanie i archiwizacja są obsługiwane',async()=>{
+    const run=adminFixtures().runs[0],removed=run.proposal.changes.find(c=>c.kind==='removed')!
+    expect(()=>requireRemovalDecisions(run,{})).toThrow('Zdecyduj')
+    expect(()=>requireRemovalDecisions(run,{[removed.cardKey]:{skip:true}})).not.toThrow()
+    expect(()=>requireRemovalDecisions(run,{[removed.cardKey]:{skip:false}})).not.toThrow()
+    const repository=adminPreviewRepository(),before=await repository.load()
+    await expect(repository.applyRun(run.id,{})).rejects.toThrow('Zdecyduj')
+    expect(await repository.load()).toEqual(before)
+  })
+  it('historyczny import nadal pokazuje różnice, gdy karta jest już zaktualizowana',()=>{
+    const {card,runs}=draft(),change=runs[0].proposal.changes.find(c=>c.kind==='changed')!
+    const current={...card,lines:change.card!.lines}
+    expect(importLineDiff(change,current,false).filter(l=>l.kind==='changed')).toHaveLength(1)
+    expect(importLineDiff(change,current,true).filter(l=>l.kind==='changed')).toHaveLength(0)
+  })
   it('zmiana kolejności zachowuje klucze historii odzywek',()=>{
     const {card,calls,lines,data}=draft()
     const result=prepareCard(card,card,calls,[lines[1],lines[0],...lines.slice(2)],data.cards)

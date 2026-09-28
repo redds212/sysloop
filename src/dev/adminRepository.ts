@@ -1,7 +1,7 @@
 import type { AdminRepository, ImportDecisions } from '../admin/types'
 import { adminFixtures } from './adminFixtures'
 import { stampChangedLines } from '../lib/contentChanges'
-import { effectiveLines } from '../admin/model'
+import { effectiveLines, requireRemovalDecisions } from '../admin/model'
 import { readPreviewReports, writePreviewReports } from './previewReports'
 
 export function adminPreviewRepository(storage?:Storage):AdminRepository {
@@ -26,6 +26,7 @@ export function adminPreviewRepository(storage?:Storage):AdminRepository {
     async applyRun(id,decisions:ImportDecisions){
       const run=runById(id)
       if(run.status!=='pending')throw new Error('Import nie oczekuje na decyzję')
+      requireRemovalDecisions(run,decisions)
       for(const change of run.proposal.changes){
         const decision=decisions[change.cardKey]??{}
         if(decision.skip||change.kind==='unchanged')continue

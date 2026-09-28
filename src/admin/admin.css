@@ -21,6 +21,9 @@
 .admin-list-card .admin-row-head { width:100%; }
 .badge,.flag { display:inline-block; border:1px solid #ffffff18; border-radius:5px; padding:4px 8px; font-size:10px; color:#aebfd5; }
 .badge.draft,.flag { color:#e7c178; border-color:#fbbf2433; }.badge.active { color:#34d399; }.flag {margin:8px 6px 8px 0;}
+.import-version.current { color:#6ee7b7; background:#10b98120; border-color:#10b98155; }
+.import-version.legacy { color:#fbbf24; background:#fbbf2414; border-color:#fbbf2455; }
+.import-removal-warning { border:1px solid #fbbf2455; background:#fbbf240a; border-radius:10px; padding:16px; margin-top:20px; }
 .admin-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:16px 0; }
 .danger { color:#ff938d; }
 .admin-call-row { display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; border-bottom:1px solid #ffffff10; padding:10px 0; }

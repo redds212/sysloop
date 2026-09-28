@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppUser, Attempt, Card, SRSEntry, UserSettings } from '../types'
 import type { Journal, LearningData, LearningOperation, LearningRepository } from '../lib/learningRepository'
 import { flushOperation } from '../lib/learningRepository'
-import { generateDailySession, adaptSession } from '../lib/session'
+import { generateDailySession, generateAdditionalSession, adaptSession } from '../lib/session'
 import { answerSession, currentCardId, restoreSession, startSession, type SessionState } from '../lib/sessionState'
 import { normalizeEntry } from '../lib/srs'
 import { todayKey } from '../lib/date'
@@ -75,8 +75,16 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
   }
   const attemptedIds = new Set(data?.attempts.filter(a=>a.phase!=='hard').map(a => a.cardId))
   const queue = data ? generateDailySession(data.cards,data.store,settings,new Date(),attemptedIds) : null
+  const completed = !!session && !currentCardId(session)
+  const nextQueue = data && completed ? generateAdditionalSession(data.cards,data.store,settings,data.attempts,session.session.slots.map(s=>s.cardId)) : null
+  async function beginNext() {
+    if (!data || !completed || !nextQueue?.slots.length || loadedDay !== todayKey()) return false
+    await commit({session:startSession(nextQueue)})
+    return true
+  }
   async function begin() {
     if (!data || !queue || loadedDay !== todayKey()) return
+    if (completed) return
     let next = session ?? startSession(queue)
     const adjusted = adaptSession(next.session,next.index,data.cards,data.store,settings,new Date(),attemptedIds)
     next = { ...next, session: adjusted, inBuffer: next.inBuffer || (next.index >= adjusted.slots.length && next.buffer.length > 0) }
@@ -88,6 +96,7 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
     const result = answerSession(session,attempt,normalizeEntry(data.store[attempt.cardId]),new Date(attempt.ts),settings.correctionMode)
     result.state = restoreSession(result.state,data.cards) ?? result.state
     await commit({ attempt, ...(result.progress ? { progress: { cardId: attempt.cardId, entry: result.progress } } : {}), session: result.state })
+    return !!currentCardId(result.state)
   }
   async function saveVisit(attempt: Attempt, entry: SRSEntry) { await commit({ attempt, progress: { cardId: attempt.cardId, entry } }) }
   async function saveHard(attempt: Attempt) {
@@ -102,7 +111,7 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
     lock.current=true; setBusy(true)
     try {
       await repository.saveSettings(next)
-      if(data && session && !session.inBuffer) {
+      if(data && session && !completed && !session.inBuffer) {
         const adapted = adaptSession(session.session,session.index,data.cards,data.store,next,new Date(),attemptedIds)
         const nextSession: SessionState = { ...session, session: adapted, inBuffer: session.index >= adapted.slots.length && session.buffer.length > 0 }
         await flushOperation(repository,journal,{session:nextSession})
@@ -112,5 +121,5 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
     } catch { setError('Nie udało się zapisać ustawień. Spróbuj ponownie.'); throw new Error('Zapis ustawień nie powiódł się.') }
     finally { lock.current=false; setBusy(false) }
   }
-  return { data, loading: !data || loadedDay !== day, settings, session, queue, currentId: session ? currentCardId(session) : null, day, busy, error, load, begin, answer, saveVisit, saveHard, setStar, restoreVisit, updateSettings }
+  return { data, loading: !data || loadedDay !== day, settings, session, queue, nextQueue, currentId: session ? currentCardId(session) : null, day, busy, error, load, begin, beginNext, answer, saveVisit, saveHard, setStar, restoreVisit, updateSettings }
 }

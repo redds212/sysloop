@@ -1,4 +1,4 @@
-import type { Card, SRSStore, UserSettings, LearningMode } from '../types';
+import type { Attempt, Card, SRSStore, UserSettings, LearningMode } from '../types';
 import { normalizeEntry, isRetryDue } from './srs';
 import { todayKey, toDateKey, isOnOrBefore } from './date';
 
@@ -230,6 +230,19 @@ export function generateDailySession(
   const today = todayKey(now);
   const pools = buildPools(cards, store, today, now, attemptedIds);
   return finish(today, fillToTarget([], pools, settings), pools, settings);
+}
+
+/** A further scheduled batch never repeats a card already graded today. */
+export function generateAdditionalSession(
+  cards: Card[], store: SRSStore, settings: UserSettings, attempts: readonly Attempt[],
+  completedCardIds: readonly string[], now: Date = new Date(),
+): DailySession {
+  const excluded = new Set([
+    ...completedCardIds,
+    ...attempts.filter(a => todayKey(new Date(a.ts)) === todayKey(now)).map(a => a.cardId),
+  ]);
+  const attempted = new Set(attempts.filter(a => a.phase !== 'hard').map(a => a.cardId));
+  return generateDailySession(cards.filter(c => !excluded.has(c.id)), store, settings, now, attempted);
 }
 
 /**

@@ -1,7 +1,33 @@
 import { auctionKey, cardKey, normalizeAlternatives, normalizeAuction } from '../lib/auction/normalize'
 import type { CardRow } from '../lib/database.types'
 import type { CardLine, Side } from '../types'
-import type { ImportChange } from './types'
+import type { ImportChange, ImportDecisions, ImportRun, ImportSummary } from './types'
+
+/** A version expires when the next version is applied, not when it is uploaded. */
+export function supersededAt(run: ImportSummary, runs: readonly ImportSummary[]): string | null {
+  if (run.status !== 'applied' || !run.applied_at) return null
+  const applied = runs.filter(r=>r.category_slug===run.category_slug&&r.status==='applied'&&r.applied_at)
+    .sort((a,b)=>Date.parse(a.applied_at!)-Date.parse(b.applied_at!)||a.id.localeCompare(b.id))
+  const index = applied.findIndex(r=>r.id===run.id)
+  return index < 0 ? null : applied[index+1]?.applied_at ?? null
+}
+
+export function undecidedRemovals(run: ImportRun, decisions: ImportDecisions): ImportChange[] {
+  return run.proposal.changes.filter(c=>c.kind==='removed'&&typeof decisions[c.cardKey]?.skip!=='boolean'
+    && !Object.values(decisions).some(d=>d.linkTo===c.cardKey&&!d.skip))
+}
+
+export function requireRemovalDecisions(run: ImportRun, decisions: ImportDecisions) {
+  if (undecidedRemovals(run,decisions).length) throw new Error('Zdecyduj, czy zachować, czy archiwizować każdą sekwencję, która zniknęła z PDF.')
+}
+
+export function importLineDiff(change: ImportChange, current: CardRow | undefined, pending: boolean) {
+  // Applied imports must not compare their proposal against today's (already updated) card.
+  const before = pending ? current?.lines??change.oldRaw?.lines??[] : change.oldRaw?.lines??[]
+  const after = change.kind==='removed'?[]:change.kind==='unchanged'?before:
+    pending?effectiveLines(change,current):change.card?.lines??change.newRaw?.lines??[]
+  return lineDiff(before,after)
+}
 
 export interface CallDraft { side: Side; text: string; qualifier: string; implicit?: true }
 export interface LineDraft { key: string; label: string; bids: string; meaning: string }

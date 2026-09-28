@@ -21,6 +21,11 @@ brak obrazu jest jawnie oznaczony. W `card` nie zapisujemy URL ani obrazów.
 `p_decisions`: obiekt indeksowany `cardKey`; wartości `{ cosmetic?, linkTo?, approve?, skip? }`.
 `linkTo` zawiera klucz usuwanej karty w tej samej kategorii; tylko dodana karta może go użyć.
 `skip` pomija tę zmianę w bieżącym imporcie. Zastosowany raw snapshot nadal opisuje cały PDF.
+Panel wymaga osobnej decyzji dla każdej pozycji `removed`: `skip: true` zachowuje
+kartę i jej postęp; `skip: false` potwierdza archiwizację, bez kasowania historii.
+Bez wyboru przycisk zastosowania pozostaje zablokowany. Końcowe potwierdzenie pokazuje
+wybrane działania. Zachowana karta może nadal istnieć w treningu mimo braku w nowym PDF.
+Istniejący RPC obsługuje te wartości; kontrola jawnego wyboru działa w panelu i repozytorium klienta.
 Administrator jawnie zatwierdzający kartę usuwa flagi; niezweryfikowane pozycje pozostają draft.
 
 M6: plik lokalny `data/proposals/<slug>.json` opakowuje rekord bazy w `run`.

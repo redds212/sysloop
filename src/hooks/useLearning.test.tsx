@@ -7,8 +7,74 @@ import { previewUser } from '../dev/fixtures'
 import { browserJournal } from '../lib/learningRepository'
 import { grade } from '../lib/grading'
 import { currentCardId } from '../lib/sessionState'
+import { previewData } from '../dev/fixtures'
+import { inventedCard } from '../lib/testFixtures'
 afterEach(()=>{cleanup();localStorage.clear()})
 describe('sesja z zapisem',()=>{
+  it('kolejne porcje zachowują historię, poprawki i wznowienie, bez powtarzania ocenionych kart',async()=>{
+    localStorage.setItem('sysloop:preview:data',JSON.stringify({...previewData(),cards:Array.from({length:12},(_,i)=>inventedCard(`extra-${i}`)),store:{}}))
+    const repo=previewRepository(localStorage),journal=browserJournal(previewUser,localStorage)
+    const hook=renderHook(()=>useLearning(previewUser,repo,journal))
+    await waitFor(()=>expect(hook.result.current.data).not.toBeNull())
+    await act(()=>hook.result.current.begin())
+    await act(async()=>{expect(await hook.result.current.beginNext()).toBe(false)})
+    const firstIds=hook.result.current.session!.session.slots.map(s=>s.cardId)
+    for(let i=0;i<5;i++) {
+      const card=hook.result.current.data!.cards.find(c=>c.id===hook.result.current.currentId)!
+      await act(()=>hook.result.current.answer(grade(card,[],false,'main')))
+    }
+    expect(hook.result.current.nextQueue!.slots).toHaveLength(5)
+    await act(()=>hook.result.current.updateSettings({...hook.result.current.settings,correctionMode:'missed'}))
+    expect(hook.result.current.currentId).toBeNull()
+    await act(()=>hook.result.current.beginNext())
+    expect(hook.result.current.session!.buffer).toEqual([])
+    expect(hook.result.current.session!.session.slots.every(s=>!firstIds.includes(s.cardId))).toBe(true)
+    const missed=hook.result.current.data!.cards.find(c=>c.id===hook.result.current.currentId)!
+    await act(()=>hook.result.current.answer(grade(missed,[missed.lines[0].key],false,'main')))
+    const resumeId=hook.result.current.currentId
+    hook.unmount()
+    const resumedRepo=previewRepository(localStorage)
+    const resumed=renderHook(()=>useLearning(previewUser,resumedRepo,journal))
+    await waitFor(()=>expect(resumed.result.current.currentId).toBe(resumeId))
+    expect(resumed.result.current.data!.attempts).toHaveLength(6)
+    expect(resumed.result.current.session!.correctionLines?.[missed.id]).toEqual([missed.lines[0].key])
+    for(let i=0;i<4;i++) {
+      const card=resumed.result.current.data!.cards.find(c=>c.id===resumed.result.current.currentId)!
+      await act(()=>resumed.result.current.answer(grade(card,[],false,'main')))
+    }
+    expect(resumed.result.current.currentId).toBe(missed.id)
+    await act(()=>resumed.result.current.answer({...grade(missed,[],false,'buffer'),scope:'partial'}))
+    expect(resumed.result.current.data!.store[missed.id]).toMatchObject({status:'LEARNING',interval:1,consecutiveCorrect:0})
+    expect(resumed.result.current.nextQueue!.slots).toHaveLength(2)
+    await act(()=>resumed.result.current.beginNext())
+    for(let i=0;i<2;i++) {
+      const card=resumed.result.current.data!.cards.find(c=>c.id===resumed.result.current.currentId)!
+      await act(()=>resumed.result.current.answer(grade(card,[],false,'main')))
+    }
+    expect(resumed.result.current.nextQueue!.slots).toEqual([])
+    await act(async()=>{expect(await resumed.result.current.beginNext()).toBe(false)})
+    expect(resumed.result.current.data!.attempts.filter(a=>a.phase==='main')).toHaveLength(12)
+    expect(resumed.result.current.settings.dailyTarget).toBe(5)
+  })
+  it('odzyskuje zapis rozpoczęcia kolejnej porcji po utracie potwierdzenia',async()=>{
+    const repo=previewRepository(),journal=browserJournal(previewUser,localStorage)
+    const hook=renderHook(()=>useLearning({...previewUser,dailyTarget:1},repo,journal))
+    await waitFor(()=>expect(hook.result.current.data).not.toBeNull())
+    await act(()=>hook.result.current.begin())
+    const card=hook.result.current.data!.cards.find(c=>c.id===hook.result.current.currentId)!
+    await act(()=>hook.result.current.answer(grade(card,[],false,'main')))
+    const nextId=hook.result.current.nextQueue!.slots[0].cardId
+    const save=repo.saveSession.bind(repo)
+    repo.saveSession=async session=>{await save(session);throw new Error('Lost receipt')}
+    await act(async()=>{await expect(hook.result.current.beginNext()).rejects.toThrow()})
+    expect(hook.result.current.currentId).toBeNull()
+    expect(journal.read()?.session?.session.slots[0].cardId).toBe(nextId)
+    repo.saveSession=save
+    await act(()=>hook.result.current.load())
+    expect(hook.result.current.currentId).toBe(nextId)
+    expect(hook.result.current.data!.attempts).toHaveLength(1)
+    expect(journal.read()).toBeNull()
+  })
   it('trening trudnych zapisuje tylko próbę, nie zmienia SRS, sesji ani puli nowych',async()=>{
     const repo=previewRepository(),journal=browserJournal(previewUser,localStorage)
     const progress=vi.spyOn(repo,'putProgress'),session=vi.spyOn(repo,'saveSession')

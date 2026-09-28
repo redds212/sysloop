@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase'
 import { allRows } from '../lib/supabaseRepository'
 import type { AdminRepository } from './types'
+import { requireRemovalDecisions } from './model'
 
 function result<T>(r: { data: T; error: unknown }): T {
   if (r.error) throw new Error('Operacja nie została potwierdzona. Sprawdź połączenie i uprawnienia, a następnie odśwież dane.')
@@ -42,7 +43,12 @@ export function createAdminRepository(currentUserId: string): AdminRepository {
     },
     async updateReport(id, status) { result(await supabase.from('card_reports').update({status}).eq('id',id).select('id').single()) },
     async deleteReport(id) { result(await supabase.from('card_reports').delete().eq('id',id).select('id').single()) },
-    async applyRun(id, decisions) { result(await supabase.rpc('apply_import_run', {p_run_id:id, p_decisions:decisions})) },
+    async applyRun(id, decisions) {
+      const run=result(await supabase.from('import_runs').select('*').eq('id',id).single())
+      if(!run)throw new Error('Nie znaleziono importu.')
+      requireRemovalDecisions(run,decisions)
+      result(await supabase.rpc('apply_import_run', {p_run_id:id, p_decisions:decisions}))
+    },
     async discardRun(id) { result(await supabase.rpc('discard_import_run', {p_run_id:id})) },
     async pageUrl(path) {
       if (!/^[a-zA-Z0-9-]+\/p\d+\.png$/.test(path)) throw new Error('Nieprawidłowa ścieżka strony źródłowej.')
