@@ -36,8 +36,8 @@ class Row:
         return f"p{self.page}:r{self.index}"
 
 
-def group_rows(words, page=1, tolerance=3.0):
-    """Use top positions; symbols and baseline shifts can differ by a few points."""
+def group_rows(words, page=1, tolerance=4.0):
+    """Keep mixed-font symbols on their row despite differing glyph top positions."""
     words = [w if isinstance(w, Word) else Word(*w[:5]) for w in words]
     groups = []
     for word in sorted(words, key=lambda w: (w.y0, w.x0)):

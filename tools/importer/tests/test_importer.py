@@ -73,6 +73,21 @@ def test_hazard_page_header_and_footer_removed_midblock():
     assert len(kept) == 2 and len(noise) == 4
 
 
+def test_mixed_font_tops_keep_symbols_in_their_meaning_row():
+    source = [word for r in root_rows() for word in r.words] + [
+        Word(70, 60, 90, 72, '4♦'), Word(115, 60, 120, 72, '-'),
+        Word(140, 60, 175, 72, 'wariant'),
+        Word(180, 56.3, 186, 72.3, 'A'),
+        Word(190, 57.2, 197, 71.8, '♣'),
+        Word(70, 77, 90, 89, '4♥'), Word(115, 77, 120, 89, '-'),
+        Word(140, 77, 175, 89, 'drugi'),
+    ]
+    result = parse(group_rows(list(reversed(source))))
+    assert [(line['key'], line['meaning']) for line in result['cards'][0]['lines']] == [
+        ('4D', 'wariant A ♣'), ('4H', 'drugi')]
+    assert result['stats']['unaccountedCallLines'] == 0
+
+
 def test_hazard_wrapped_rows_and_lone_dash():
     r = parse(root_rows()+[table_row('4♦','pierwszy wariant',60),table_row('','drugi wariant',74)])
     assert len(r['cards'][0]['lines']) == 1
@@ -106,6 +121,22 @@ def test_large_vertical_gap_does_not_join_answer_and_new_stub():
     result=parse(root_rows()+[table_row('4D','pas',60),row('5C - ?',110),table_row('5D','test',150)])
     assert result['cards'][0]['lines'][0]['key']=='4D'
     assert result['cards'][1]['auctionKey']=='5C (P)'
+
+
+@pytest.mark.parametrize('next_page', [1, 2])
+def test_full_four_seat_stub_is_not_a_meaning_continuation(next_page):
+    first = Row(next_page, 0, [
+        Word(70, 100, 95, 112, '(5C)'), Word(110, 100, 115, 112, '-'),
+        Word(145, 100, 165, 112, '5D'), Word(180, 100, 185, 112, '-'),
+        Word(215, 100, 235, 112, '(P)'), Word(250, 100, 255, 112, '-'),
+        Word(285, 100, 305, 112, '5H')])
+    second = Row(next_page, 1, [
+        Word(70, 117, 95, 129, '(P)'), Word(110, 117, 115, 129, '-'),
+        Word(145, 117, 165, 129, '?')])
+    result = parse(root_rows() + [table_row('4D', 'wymyślone', 60), first, second,
+                                table_row('5S', 'kolejny test', 145, next_page)])
+    assert result['cards'][1]['auctionKey'] == '(5C) 5D (P) 5H (P)'
+    assert [line['key'] for line in result['cards'][0]['lines']] == ['4D']
 
 
 def test_hazard_four_columns_parenthesized():
@@ -268,7 +299,7 @@ def test_explicit_root_after_leading_pass_never_duplicates_header():
 
 def test_category_revision_matching_and_catalog_rows():
     catalog = json.loads(Path('tools/importer/categories.json').read_text(encoding='utf-8'))
-    assert len(catalog) == 15 and len({c['slug'] for c in catalog}) == 15
+    assert len(catalog) == 17 and len({c['slug'] for c in catalog}) == 17
     for meta in catalog:
         mapped = category_for(meta['prefix']+'_rev2099.pdf')
         assert mapped['slug'] == meta['slug'] and mapped['revision'] == 'rev2099'

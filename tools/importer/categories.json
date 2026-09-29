@@ -13,5 +13,7 @@
   {"prefix":"OBR_1D","slug":"obr-1d","name":"Obrona przeciwko 1♦","group":"Obrona"},
   {"prefix":"OBR_W_2kol","slug":"obr-w-2kol","name":"Wejścia dwukolorowe","group":"Obrona"},
   {"prefix":"OBR_W_2NT po blokach","slug":"obr-w-2nt-bloki","name":"Wejście 2NT po otwarciach blokujących","group":"Obrona"},
-  {"prefix":"OBR_inne","slug":"obr-inne","name":"Obrona – różne","group":"Obrona"}
+  {"prefix":"OBR_inne","slug":"obr-inne","name":"Obrona – różne","group":"Obrona"},
+  {"prefix":"OBR_VS_2D multi","slug":"obr-vs-2d-multi","name":"Obrona przeciwko 2♦ Multi","group":"Obrona"},
+  {"prefix":"OBR_W_3NT","slug":"obr-w-3nt","name":"Wejście 3NT","group":"Obrona"}
 ]

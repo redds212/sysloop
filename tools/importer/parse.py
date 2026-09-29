@@ -203,7 +203,9 @@ class Parser:
             candidate = line_candidate(row)
             # A meaning beginning with a call is still in the meaning column.
             # Do not consume it as the start of the next auction (also across pages).
-            if (stub and not any(c[1] == '?' for c in stub) and candidate
+            # A row spanning at least three seats can begin a full auction stub.
+            if (stub and len([c for c in stub if c[1]]) < 3
+                    and not any(c[1] == '?' for c in stub) and candidate
                     and self.last_line and self.meaning_x is not None
                     and candidate[2] is not None and candidate[2] >= self.meaning_x - 4):
                 stub = None
