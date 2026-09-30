@@ -24,6 +24,7 @@ describe('panel administratora',()=>{
     render(<AdminPanel user={adminPreviewUser} repository={repository} onBack={()=>{}}/>)
     await screen.findByRole('heading',{name:'Karty'})
     fireEvent.click(screen.getByRole('button',{name:'Użytkownicy'}))
+    fireEvent.click(screen.getByText('Zarządzaj'))
     expect(screen.getAllByRole('button',{name:'Usuń konto'})).toHaveLength(1)
     fireEvent.click(screen.getByRole('button',{name:'Zatwierdź dostęp'}))
     expect(update).not.toHaveBeenCalled()

@@ -11,6 +11,7 @@ export function adminPreviewRepository(storage?:Storage):AdminRepository {
   const persist=()=>storage?.setItem(key,JSON.stringify(state))
   const runById=(id:string)=>{const run=state.runs.find(r=>r.id===id);if(!run)throw new Error('Brak importu');return run}
   return {
+    async userActivity(){return state.data.users.map((u,i)=>({user_id:u.id,streak_days:i===0?12:0,total_attempts:i===0?428:0,unique_cards:i===0?86:0,last_sign_in_at:i===0?'2026-09-30T07:35:00.000Z':null}))},
     async load(){return structuredClone({...state.data,reports:[...readPreviewReports(storage),...state.data.reports],runs:state.runs})},
     async getRun(id){return structuredClone(runById(id))},
     async saveCard(card,substantive,revision){

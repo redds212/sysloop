@@ -6,6 +6,7 @@ import type { CardRevision } from './revisions'
 import type { ImportRun, ImportDecisions } from '../admin/types'
 
 export type ProfileRow = { id: string; username: string; is_admin: boolean; status: 'pending' | 'approved'; daily_target: number; mode: LearningMode; timed_mode: boolean; correction_mode?: CorrectionMode; created_at: string }
+export type UserActivityRow = { user_id:string; streak_days:number; total_attempts:number; unique_cards:number; last_sign_in_at:string|null }
 export type CategoryRow = { slug: string; name: string; group_name: string; sort_order: number; source_file: string; revision: string; notes: { title: string; body: string }[]; updated_at: string }
 export type CardRow = { id: string; category_slug: string; card_key: string; section: string; sort_order: number; auction: AuctionCall[]; auction_key: string; context: string | null; auction_note: string | null; notes: string[]; lines: CardLine[]; status: 'draft' | 'active' | 'archived'; review_flags: string[]; verification_note: string | null; source_page: number; source_revision: string; created_at: string; updated_at: string }
 export type SrsProgressRow = { user_id: string; card_id: string; status: SRSStatus; consecutive_correct: number; interval: number; next_review_date: string | null; last_seen: string | null; flag_difficult: boolean }
@@ -18,6 +19,7 @@ export type Database = { public: {
   Tables: { card_revisions:Table<{[K in keyof CardRevision]:CardRevision[K]}>; difficult_cards: Table<{user_id:string;card_id:string}>; profiles: Table<ProfileRow>; categories: Table<CategoryRow>; cards: Table<CardRow>; srs_progress: Table<SrsProgressRow>; attempts: Table<AttemptRow>; daily_sessions: Table<DailySessionRow>; card_reports: Table<ReportRow>; import_runs: Table<ImportRunRow> };
   Views: Record<string, never>;
   Functions: {
+    admin_user_activity: { Args: Record<string, never>; Returns: UserActivityRow[] };
     update_my_learning_settings: { Args: { p_daily_target: number; p_mode: string; p_timed_mode: boolean; p_correction_mode: string }; Returns: undefined };
     card_source: { Args: { p_card_id: string }; Returns: SourceMetadata | null };
     update_my_settings: { Args: { p_daily_target: number; p_mode: string; p_timed_mode: boolean }; Returns: undefined };

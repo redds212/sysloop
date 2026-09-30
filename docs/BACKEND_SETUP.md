@@ -120,3 +120,13 @@ Migracja 0008 została wykonana przez właściciela. Dla tego rozszerzenia uruch
 6. W historii sprawdź datę, Przed/Po i trening. Przy nowej odzywce Przed jest puste. NEW znika po pierwszej zapisanej ocenie tej wersji, także błędnej.
 
 Nie zmieniaj ręcznie RLS ani publiczności zasobnika. Migracja dodaje tabelę historii z RLS i wersje odzywek w próbach; zachowuje karty, postęp i konta. Testowana lokalnie w PostgreSQL w pamięci, również przy ponownym wykonaniu. Nie była uruchamiana przez agenta na projekcie Supabase. Historia starsza niż punkt uruchomienia migracji nie jest odtwarzana z parsera.
+
+## Aktualizacja z 30 września: aktywność użytkowników (0010)
+
+1. W projekcie SysLoop wybierz **SQL Editor → New query**.
+2. Wklej cały plik `supabase/migrations/0010_admin_user_activity.sql` i wybierz **Run**.
+3. Po publikacji nowego frontendu otwórz **Admin → Użytkownicy**. Pod nazwami znajdziesz dni z rzędu, oceny / różne karty i ostatnie logowanie. **Odśwież aktywność** ponawia odczyt.
+
+Migracja tylko dodaje RPC dostępne dla administratorów, bez zmian w historii, harmonogramie, RLS tabel czy kontach. Zwykłe i oczekujące konta oraz goście nie mogą odczytać statystyk innych osób. Ostatnie logowanie pochodzi z Supabase Auth; używanie już otwartej sesji nie oznacza kolejnego logowania. Daty i streak liczymy w czasie Warszawy. Seria z wczoraj pozostaje aktywna do końca dzisiejszego dnia. Oceny obejmują wszystkie zapisane próby, również poprawki i ćwiczenia trudnych; druga liczba to różne karty. Reset historii zeruje jej statystyki. Bez migracji panel pokazuje wyjaśnienie i kreski zamiast nieprawdziwych zer; zarządzanie kontami nadal działa.
+
+Plik przygotowany do ręcznego wykonania przez właściciela; agent nie uruchamia go na produkcji.

@@ -11,6 +11,14 @@ const runColumns = 'id,category_slug,source_file,revision,status,created_at,appl
 
 export function createAdminRepository(currentUserId: string): AdminRepository {
   return {
+    async userActivity() {
+      return allRows(async(a,b)=>{
+        const response=await supabase.rpc('admin_user_activity').order('user_id').range(a,b)
+        if(response.error?.code==='PGRST202'||response.error?.code==='42883')
+          throw new Error('Statystyki wymagają migracji 0010_admin_user_activity.sql w Supabase.')
+        return response
+      })
+    },
     async load() {
       const [cards, categories, users, reports, runs] = await Promise.all([
         allRows((a,b) => supabase.from('cards').select('*').order('id').range(a,b)),

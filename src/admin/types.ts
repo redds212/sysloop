@@ -1,4 +1,4 @@
-import type { CardRow, CategoryRow, ProfileRow, ReportRow } from '../lib/database.types'
+import type { CardRow, CategoryRow, ProfileRow, ReportRow, UserActivityRow } from '../lib/database.types'
 import type { CardLine } from '../types'
 
 export type CardDocument = Omit<CardRow, 'id' | 'created_at' | 'updated_at'>
@@ -27,6 +27,7 @@ export type ImportDecisions = Record<string, { cosmetic?: boolean; approve?: boo
 export interface AdminData { cards: CardRow[]; categories: CategoryRow[]; users: ProfileRow[]; reports: ReportRow[]; runs: ImportSummary[] }
 export interface AdminRepository {
   load(): Promise<AdminData>;
+  userActivity(): Promise<UserActivityRow[]>;
   getRun(id: string): Promise<ImportRun>;
   saveCard(card: CardRow, substantive: boolean, revision: string): Promise<void>;
   saveCategory(category: CategoryRow): Promise<void>;
