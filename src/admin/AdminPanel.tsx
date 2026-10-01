@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppUser } from '../types'
+import type { ReportRow } from '../lib/database.types'
 import type { AdminData, AdminRepository } from './types'
 import { CardsAdmin } from './CardsAdmin'
 import { CardEditor } from './CardEditor'
@@ -45,6 +46,12 @@ export function AdminPanel({user,repository,onBack,preview=false}: {user:AppUser
   }
   const card=data?.cards.find(c=>c.id===editing)
   const writing=busy||!!error
+  async function exportDiscussions(reports:ReportRow[]) {
+    const [fresh,{createDiscussionPdf}]=await Promise.all([repository.load(),import('./discussionPdf')])
+    const selected=reports.map(r=>fresh.reports.find(current=>current.id===r.id&&current.kind==='discussion'))
+    if(selected.some(r=>!r))throw new Error('Lista tematów zmieniła się. Odśwież panel.')
+    return createDiscussionPdf({reports:selected as ReportRow[],cards:fresh.cards,categories:fresh.categories,exportedAt:new Date().toISOString()})
+  }
   return <div className="admin-shell"><header className="admin-header"><button className="wordmark" disabled={busy||!!card||categoryEditing} onClick={onBack}>Sys<span>Loop</span></button><span className="eyebrow">Administracja</span>{!card&&!categoryEditing&&<button className="text-button" disabled={busy} onClick={onBack}>← Wróć do nauki</button>}</header>
     {preview&&<div className="preview-banner">Podgląd administratora · wymyślone dane · zmiany tylko w tej karcie przeglądarki</div>}
     <main className="admin-main">
@@ -55,7 +62,7 @@ export function AdminPanel({user,repository,onBack,preview=false}: {user:AppUser
       {data&&card?<CardEditor key={card.id} card={card} cards={data.cards} repository={repository} busy={writing} onBack={()=>setEditing(null)} save={(value,substantive,revision)=>act(()=>repository.saveCard(value,substantive,revision),'Karta została zapisana.')}/>:data&&<>
         {tab==='cards'&&<CardsAdmin cards={data.cards} categories={data.categories} onEdit={edit}/>}
         {tab==='users'&&<UsersAdmin users={data.users} loadActivity={repository.userActivity} currentId={user.id} busy={writing} update={(id,patch)=>act(()=>repository.updateUser(id,patch),'Uprawnienia użytkownika zostały zapisane.')} remove={id=>act(()=>repository.deleteUser(id),'Konto zostało usunięte.')}/>}
-        {(tab==='reports'||tab==='discussions')&&<ReportsAdmin key={tab} kind={tab==='discussions'?'discussion':'error'} reports={data.reports} busy={writing} onEdit={edit} update={(id,status)=>act(()=>repository.updateReport(id,status),tab==='discussions'?'Status tematu został zapisany.':'Status zgłoszenia został zapisany.')} remove={id=>act(()=>repository.deleteReport(id),tab==='discussions'?'Temat został usunięty.':'Zgłoszenie zostało usunięte.')}/>}
+        {(tab==='reports'||tab==='discussions')&&<ReportsAdmin key={tab} kind={tab==='discussions'?'discussion':'error'} reports={data.reports} busy={writing} onEdit={edit} exportPdf={exportDiscussions} update={(id,status)=>act(()=>repository.updateReport(id,status),tab==='discussions'?'Status tematu został zapisany.':'Status zgłoszenia został zapisany.')} remove={id=>act(()=>repository.deleteReport(id),tab==='discussions'?'Temat został usunięty.':'Zgłoszenie zostało usunięte.')}/>}
         {tab==='categories'&&<CategoriesAdmin categories={data.categories} busy={writing} onEditing={setCategoryEditing} save={c=>act(()=>repository.saveCategory(c),'Kategoria została zapisana.')}/>}
         {tab==='imports'&&<ImportsAdmin runs={data.runs} cards={data.cards} repository={repository} busy={writing} apply={(id,decisions)=>act(()=>repository.applyRun(id,decisions),'Import został zastosowany.')} discard={id=>act(()=>repository.discardRun(id),'Import został odrzucony.')}/>}
       </>}

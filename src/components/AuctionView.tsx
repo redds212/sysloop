@@ -16,7 +16,7 @@ export function AuctionView({ auction, compact=false, question=true }: { auction
     <div className={compact?'auction-inline':`auction-grid ${contested?'four':'two'}`}>
       {calls.map((call,i)=><span key={i} className={`auction-call ${call.side==='they'?'opponent':''} ${call.implicit?'implicit':''}`}>
         <span>{call.side==='they'&&'('}<CallText text={call.alts.map(displayToken).join('/')} />{call.side==='they'&&')'}</span>
-        {call.qualifier&&<small className="qualifier">{call.qualifier}</small>}
+        {call.qualifier&&<small className="qualifier"><CallText text={call.qualifier}/></small>}
         {compact&&i<calls.length-1&&<span className="auction-dash">–</span>}
       </span>)}
       {!compact&&question&&<span className="auction-question" aria-label="Nasza odzywka">?</span>}

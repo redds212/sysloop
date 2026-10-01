@@ -15,6 +15,8 @@ export default defineConfig({
     },
     workbox: {
       globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+      // Eksport jest narzędziem administratora, ładowanym dopiero na żądanie.
+      globIgnores: ['**/discussionPdf-*.js'],
       navigateFallback: '/index.html',
       cleanupOutdatedCaches: true, clientsClaim: true, skipWaiting: true,
       // Tylko powłoka aplikacji. Dane i uwierzytelnianie zawsze przez sieć.

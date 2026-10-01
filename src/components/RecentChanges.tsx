@@ -28,7 +28,7 @@ export function RecentChanges({cards,categories,attempts,repository,busy,onStart
             <p className="muted">Zapis z tej aktualizacji. Pusta strona „Przed” oznacza nową odzywkę. Późniejsze zmiany mogą być już w aktualnej karcie.</p>
             {differences.map(line=><div className="revision-line" key={line.key}>
               <h3><CallText text={line.after?.label??line.before!.label}/>{!line.before&&<small>Dodano</small>}{!line.after&&<small>Usunięto</small>}</h3>
-              <div className="before-after"><div><small>Przed</small><p className="verbatim">{line.before?.meaning??''}</p></div><div><small>Po</small><p className="verbatim">{line.after?.meaning??''}</p></div></div>
+              <div className="before-after"><div><small>Przed</small><p className="verbatim"><CallText text={line.before?.meaning??''}/></p></div><div><small>Po</small><p className="verbatim"><CallText text={line.after?.meaning??''}/></p></div></div>
               {line.before&&line.after&&(line.before.label!==line.after.label||JSON.stringify(line.before.bids)!==JSON.stringify(line.after.bids))&&<p className="muted">Odzywka: <CallText text={line.before.label}/> → <CallText text={line.after.label}/></p>}
             </div>)}
             {revision.before_snapshot&&JSON.stringify(revision.before_snapshot.auction)!==JSON.stringify(revision.after_snapshot.auction)&&<div className="before-after"><div><small>Licytacja przed</small><AuctionView auction={revision.before_snapshot.auction} compact/></div><div><small>Licytacja po</small><AuctionView auction={revision.after_snapshot.auction} compact/></div></div>}
@@ -36,7 +36,7 @@ export function RecentChanges({cards,categories,attempts,repository,busy,onStart
               const before=revision.before_snapshot?.[key],after=revision.after_snapshot[key]
               if(JSON.stringify(before??(key==='notes'?[]:''))===JSON.stringify(after??(key==='notes'?[]:'')))return null
               const label={context:'Warunek',auctionNote:'Uwaga do licytacji',notes:'Uwagi',section:'Sekcja'}[key]
-              return <div key={key} className="revision-line"><h3>{label}</h3><div className="before-after"><div><small>Przed</small><p className="verbatim">{Array.isArray(before)?before.join('\n'):before??''}</p></div><div><small>Po</small><p className="verbatim">{Array.isArray(after)?after.join('\n'):after??''}</p></div></div></div>
+              return <div key={key} className="revision-line"><h3>{label}</h3><div className="before-after"><div><small>Przed</small><p className="verbatim"><CallText text={Array.isArray(before)?before.join('\n'):before??''}/></p></div><div><small>Po</small><p className="verbatim"><CallText text={Array.isArray(after)?after.join('\n'):after??''}/></p></div></div></div>
             })}
           </details>
           <div className="secondary-actions"><button className="text-button" onClick={()=>onRead(card.id)}>Czytaj aktualną pozycję</button><button className="secondary" disabled={busy} onClick={()=>onStart([card.id])}>Ćwicz aktualną pozycję</button></div>

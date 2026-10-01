@@ -52,7 +52,7 @@ export function CardView({card,category,baseline,timed,phase,repository,onRate,o
     <div className="card-breadcrumb"><span>{category?.name}</span><span className="section-title">{card.section}</span></div>
     <div className="position-heading"><h1>{phase==='buffer'?'Jeszcze raz, spokojnie.':'Co oznaczają te odzywki?'}</h1><span className="counter">{card.lines.length} {callNoun(card.lines.length)}</span></div>
     {scope==='partial'&&<p className="correction-note">Poprawiasz tylko wcześniej błędne odzywki. Cała pozycja wróci jutro.</p>}
-    <AuctionView auction={card.auction}/>{card.context&&<p className="context-chip">{card.context}</p>}
+    <AuctionView auction={card.auction}/>{card.context&&<p className="context-chip"><CallText text={card.context}/></p>}
     <div className="card-instruction"><span>{revealed?(timedOut?'Czas minął — zaliczone jako błąd':'Zaznacz każdą odzywkę, której znaczenie umknęło.'):'Przypomnij sobie znaczenie każdej odzywki.'}</span>
       {timed&&!revealed&&<span className={`timer ${timer.remaining<=10?'warning':''}`} role="timer" aria-label="Pozostały czas">{Math.floor(timer.remaining/60)}:{String(timer.remaining%60).padStart(2,'0')}</span>}
     </div>
@@ -68,20 +68,20 @@ export function CardView({card,category,baseline,timed,phase,repository,onRate,o
         {fresh.includes(line.key)&&<span className="new-chip" title="Nowe lub zmienione ustalenie — do pierwszej zapisanej oceny" aria-label={`Nowe ustalenie: ${line.label}`}>NEW</span>}
       </div>
       {!revealed?(writing?<div className="answer-input-wrap"><textarea className="answer-input" aria-label={`Twoje znaczenie: ${line.label}`} placeholder="Twoje znaczenie…" rows={1} maxLength={4000} value={answers[line.key]??''} onChange={e=>changeAnswer(line.key,e.target.value)}/>{considered.includes(line.key)&&<span className="recall-check" aria-label="Przemyślane">✓</span>}</div>:<button type="button" className="meaning-blank" aria-label={`Przemyślane znaczenie ${line.label}`} aria-pressed={considered.includes(line.key)} onClick={()=>toggleConsidered(line.key)}><span aria-label="Znaczenie ukryte"/>{considered.includes(line.key)&&<small className="recall-check" aria-hidden="true">✓</small>}</button>):<div className={`meaning-content ${answers[line.key]?.trim()?'with-answer':''}`}>
-        {answers[line.key]?.trim()&&<div className="own-answer"><small>Twój zapis</small><p className="verbatim">{answers[line.key]}</p></div>}
+        {answers[line.key]?.trim()&&<div className="own-answer"><small>Twój zapis</small><p className="verbatim"><CallText text={answers[line.key]}/></p></div>}
         <button disabled={timedOut||!!pending} className="meaning-button" aria-pressed={missed.includes(line.key)} onClick={()=>setMissed(prev=>prev.includes(line.key)?prev.filter(k=>k!==line.key):[...prev,line.key])}>
           {answers[line.key]?.trim()&&<small className="answer-caption">Znaczenie w systemie</small>}
-          <span className="verbatim">{line.meaning}</span>{changedSinceLoad(line,loadedEntry.lastSeen)&&<small className="change-chip">zmiana w {line.changedIn}</small>}
+          <span className="verbatim"><CallText text={line.meaning}/></span>{changedSinceLoad(line,loadedEntry.lastSeen)&&<small className="change-chip">zmiana w {line.changedIn}</small>}
           <span className="mark" aria-hidden="true">{missed.includes(line.key)?'✕':'○'}</span>
         </button>
         {revisionTraining&&(missed.includes(line.key)||timedOut)&&history.rows&&(()=>{
           const previous=previousLine(history.rows,card,line.key)
-          return previous?<div className="previous-answer"><small>Poprzednie ustalenie — już nie obowiązuje</small><p className="verbatim">{previous.before?.meaning??''}</p>{!previous.before&&<small>Nowa odzywka — wcześniej bez ustalenia.</small>}</div>:null
+          return previous?<div className="previous-answer"><small>Poprzednie ustalenie — już nie obowiązuje</small><p className="verbatim"><CallText text={previous.before?.meaning??''}/></p>{!previous.before&&<small>Nowa odzywka — wcześniej bez ustalenia.</small>}</div>:null
         })()}
       </div>}
     </div>)}</div>
     {revisionTraining&&revealed&&(history.error?<p className="error-note" role="alert">{history.error} <button className="text-button" onClick={history.retry}>Ponów podgląd poprzednich ustaleń</button></p>:!history.rows?<p role="status">Wczytywanie poprzednich ustaleń…</p>:<p className="muted">Zaznacz błędną odzywkę, aby zobaczyć również poprzednie ustalenie.</p>)}
-    {revealed&&(card.notes.length>0||card.auctionNote)&&<section className="notes-block"><h2>Uwagi</h2>{[...card.notes,...(card.auctionNote?[card.auctionNote]:[])].map((note,i)=><p className="verbatim" key={i}>{note}</p>)}</section>}
+    {revealed&&(card.notes.length>0||card.auctionNote)&&<section className="notes-block"><h2>Uwagi</h2>{[...card.notes,...(card.auctionNote?[card.auctionNote]:[])].map((note,i)=><p className="verbatim" key={i}><CallText text={note}/></p>)}</section>}
     {revealed&&<div className="secondary-actions"><SourcePreviewButton cardId={card.id} repository={repository}/>{category&&<button className="text-button" onClick={()=>setNotes(true)}>Notatki</button>}</div>}
     {error&&<p className="error-note" role="alert">{error}</p>}
     <footer className="card-action"><p className="muted">{phase==='hard'?'Ćwiczenie bez zmiany planu powtórek.':scope==='partial'?'To krótka poprawka. Cała pozycja wróci jutro.':revealed?'Tylko komplet poprawnych odpowiedzi zalicza kartę.':'Znaczenia odsłonisz jednocześnie.'}</p>
