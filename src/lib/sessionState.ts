@@ -8,6 +8,13 @@ export interface SessionState { session: DailySession; index: number; buffer: st
 export function startSession(session: DailySession): SessionState {
   return { session, index: 0, buffer: [], bufferIndex: 0, inBuffer: false }
 }
+/** A new main batch carries only corrections that have not yet been answered. */
+export function startNextSession(previous: SessionState, session: DailySession): SessionState {
+  if (previous.index < previous.session.slots.length || previous.session.date !== session.date || !session.slots.length) throw new Error('Najpierw zakończ pierwsze przejście sesji.')
+  const buffer = previous.buffer.slice(previous.bufferIndex)
+  if (session.slots.some(slot=>buffer.includes(slot.cardId))) throw new Error('Nowa sesja nie może zawierać odłożonych poprawek.')
+  return { ...startSession(session), buffer, correctionLines: Object.fromEntries(buffer.map(id=>[id,previous.correctionLines?.[id]??null])) }
+}
 export function currentCardId(state: SessionState): string | null {
   return (state.inBuffer ? state.buffer[state.bufferIndex] : state.session.slots[state.index]?.cardId) ?? null
 }

@@ -11,6 +11,51 @@ import { previewData } from '../dev/fixtures'
 import { inventedCard } from '../lib/testFixtures'
 afterEach(()=>{cleanup();localStorage.clear()})
 describe('sesja z zapisem',()=>{
+  it('odkłada poprawki, zachowuje je po odświeżeniu i utracie potwierdzenia oraz łączy z nowymi błędami',async()=>{
+    localStorage.setItem('sysloop:preview:data',JSON.stringify({...previewData(),cards:Array.from({length:10},(_,i)=>inventedCard(`deferred-${i}`)),store:{},correctionMode:'missed'}))
+    const user={...previewUser,dailyTarget:2},repo=previewRepository(localStorage),journal=browserJournal(user,localStorage)
+    const hook=renderHook(()=>useLearning(user,repo,journal))
+    await waitFor(()=>expect(hook.result.current.data).not.toBeNull())
+    await act(()=>hook.result.current.begin())
+    const first=hook.result.current.data!.cards.find(c=>c.id===hook.result.current.currentId)!
+    await act(()=>hook.result.current.answer(grade(first,[first.lines[0].key],false,'main')))
+    expect(hook.result.current.mainCompleted).toBe(false)
+    await act(async()=>{expect(await hook.result.current.beginNext()).toBe(false)})
+    const second=hook.result.current.data!.cards.find(c=>c.id===hook.result.current.currentId)!
+    await act(()=>hook.result.current.answer(grade(second,[],false,'main')))
+    expect(hook.result.current.mainCompleted).toBe(true)
+    expect(hook.result.current.currentId).toBe(first.id)
+    const progress=structuredClone(repo.inspect().store)
+    const save=repo.saveSession.bind(repo)
+    repo.saveSession=async state=>{await save(state);throw new Error('Lost receipt')}
+    await act(async()=>{await expect(hook.result.current.beginNext()).rejects.toThrow()})
+    expect(journal.read()?.session?.buffer).toEqual([first.id])
+    repo.saveSession=save
+    await act(()=>hook.result.current.load())
+    expect(hook.result.current.session!.inBuffer).toBe(false)
+    expect(repo.inspect().store).toEqual(progress)
+    expect(repo.inspect().attempts).toHaveLength(2)
+    const nextId=hook.result.current.currentId
+    hook.unmount()
+    const resumedRepo=previewRepository(localStorage),resumed=renderHook(()=>useLearning(user,resumedRepo,journal))
+    await waitFor(()=>expect(resumed.result.current.currentId).toBe(nextId))
+    expect(resumed.result.current.session!.correctionLines?.[first.id]).toEqual([first.lines[0].key])
+    await act(()=>resumed.result.current.updateSettings({...resumed.result.current.settings,dailyTarget:3}))
+    expect(resumed.result.current.session!.session.slots.every(s=>![first.id,second.id].includes(s.cardId))).toBe(true)
+    const newMiss=resumed.result.current.data!.cards.find(c=>c.id===resumed.result.current.currentId)!
+    for(let i=0;i<3;i++){
+      const card=resumed.result.current.data!.cards.find(c=>c.id===resumed.result.current.currentId)!
+      await act(()=>resumed.result.current.answer(grade(card,i===0?[card.lines[0].key]:[],false,'main')))
+    }
+    expect(resumed.result.current.session!.buffer).toEqual([first.id,newMiss.id])
+    expect(resumed.result.current.currentId).toBe(first.id)
+    await act(()=>resumed.result.current.answer({...grade(first,[],false,'buffer'),scope:'partial'}))
+    expect(resumed.result.current.currentId).toBe(newMiss.id)
+    await act(()=>resumed.result.current.beginNext())
+    expect(resumed.result.current.session!.buffer).toEqual([newMiss.id])
+    expect(resumed.result.current.session!.correctionLines).toEqual({[newMiss.id]:[newMiss.lines[0].key]})
+    expect(resumed.result.current.data!.store[first.id]).toMatchObject({status:'LEARNING',interval:1,consecutiveCorrect:0})
+  })
   it('kolejne porcje zachowują historię, poprawki i wznowienie, bez powtarzania ocenionych kart',async()=>{
     localStorage.setItem('sysloop:preview:data',JSON.stringify({...previewData(),cards:Array.from({length:12},(_,i)=>inventedCard(`extra-${i}`)),store:{}}))
     const repo=previewRepository(localStorage),journal=browserJournal(previewUser,localStorage)

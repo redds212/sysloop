@@ -4,12 +4,24 @@ import { inventedCard } from './testFixtures'
 import { grade } from './grading'
 import { getDefaultEntry } from './srs'
 import type { SRSStore } from '../types'
+import { startSession, startNextSession } from './sessionState'
 
 const now = new Date(2026, 8, 28, 12)
 const settings = {dailyTarget:5, mode:'balanced' as const}
 const cards = Array.from({length:14}, (_,i)=>inventedCard(String(i)))
 const due = {...getDefaultEntry(), status:'REVIEW' as const, consecutiveCorrect:2 as const, interval:9, nextReviewDate:'2026-09-27'}
 describe('additional scheduled sessions',()=>{
+  it('carries only unfinished corrections and their captured line scope',()=>{
+    const first=generateAdditionalSession(cards,{},settings,[],[],now)
+    const state={...startSession(first),index:first.slots.length,buffer:['done','partial','whole'],bufferIndex:1,inBuffer:true,correctionLines:{done:['old'],partial:['line-a'],whole:null}}
+    const next=generateAdditionalSession(cards,{},settings,[],first.slots.map(s=>s.cardId),now)
+    expect(startNextSession(state,next)).toMatchObject({index:0,inBuffer:false,bufferIndex:0,buffer:['partial','whole'],correctionLines:{partial:['line-a'],whole:null}})
+    expect(startNextSession(state,next).correctionLines).not.toHaveProperty('done')
+    expect(state.bufferIndex).toBe(1)
+    expect(()=>startNextSession({...state,index:1},next)).toThrow()
+    expect(()=>startNextSession(state,{...next,date:'2026-09-29'})).toThrow()
+    expect(()=>startNextSession(state,{...next,slots:[{cardId:'partial',kind:'retry'}]})).toThrow()
+  })
   it('keeps quotas and priority, excludes every mode graded today and completed slots',()=>{
     const store:SRSStore={'0':{...due,status:'LEARNING',interval:1},'1':due,'2':{...due,nextReviewDate:'2026-09-26'},'3':due,'4':due,'5':due,'6':due,'7':due,'8':{...due,nextReviewDate:'2026-09-29'}}
     const attempts = (['main','buffer','free','hard'] as const).map((phase,i)=>grade(cards[i+4],[],false,phase,now))

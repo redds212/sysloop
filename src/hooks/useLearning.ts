@@ -3,7 +3,7 @@ import type { AppUser, Attempt, Card, SRSEntry, UserSettings } from '../types'
 import type { Journal, LearningData, LearningOperation, LearningRepository } from '../lib/learningRepository'
 import { flushOperation } from '../lib/learningRepository'
 import { generateDailySession, generateAdditionalSession, adaptSession } from '../lib/session'
-import { answerSession, currentCardId, restoreSession, startSession, type SessionState } from '../lib/sessionState'
+import { answerSession, currentCardId, restoreSession, startSession, startNextSession, type SessionState } from '../lib/sessionState'
 import { normalizeEntry } from '../lib/srs'
 import { todayKey } from '../lib/date'
 import { useDayKey } from './useDayKey'
@@ -76,17 +76,24 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
   const attemptedIds = new Set(data?.attempts.filter(a=>a.phase!=='hard').map(a => a.cardId))
   const queue = data ? generateDailySession(data.cards,data.store,settings,new Date(),attemptedIds) : null
   const completed = !!session && !currentCardId(session)
-  const nextQueue = data && completed ? generateAdditionalSession(data.cards,data.store,settings,data.attempts,session.session.slots.map(s=>s.cardId)) : null
+  const mainCompleted = !!session && session.index >= session.session.slots.length
+  const nextQueue = data && mainCompleted ? generateAdditionalSession(data.cards,data.store,settings,data.attempts,[...session.session.slots.map(s=>s.cardId),...session.buffer]) : null
   async function beginNext() {
-    if (!data || !completed || !nextQueue?.slots.length || loadedDay !== todayKey()) return false
-    await commit({session:startSession(nextQueue)})
+    if (!data || !mainCompleted || !nextQueue?.slots.length || loadedDay !== todayKey()) return false
+    await commit({session:startNextSession(session,nextQueue)})
     return true
+  }
+  function cardsForSession(state:SessionState) {
+    const ids=new Set(state.session.slots.map(s=>s.cardId))
+    const additional=data?.attempts.some(a=>a.phase==='main'&&todayKey(new Date(a.ts))===day&&!ids.has(a.cardId))
+    const excluded=new Set([...state.buffer,...(additional?data!.attempts.filter(a=>todayKey(new Date(a.ts))===day).map(a=>a.cardId):[])])
+    return data!.cards.filter(c=>ids.has(c.id)||!excluded.has(c.id))
   }
   async function begin() {
     if (!data || !queue || loadedDay !== todayKey()) return
     if (completed) return
     let next = session ?? startSession(queue)
-    const adjusted = adaptSession(next.session,next.index,data.cards,data.store,settings,new Date(),attemptedIds)
+    const adjusted = next.index >= next.session.slots.length ? next.session : adaptSession(next.session,next.index,cardsForSession(next),data.store,settings,new Date(),attemptedIds)
     next = { ...next, session: adjusted, inBuffer: next.inBuffer || (next.index >= adjusted.slots.length && next.buffer.length > 0) }
     next = restoreSession(next,data.cards) ?? startSession(queue)
     await commit({ session: next })
@@ -112,7 +119,7 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
     try {
       await repository.saveSettings(next)
       if(data && session && !completed && !session.inBuffer) {
-        const adapted = adaptSession(session.session,session.index,data.cards,data.store,next,new Date(),attemptedIds)
+        const adapted = adaptSession(session.session,session.index,cardsForSession(session),data.store,next,new Date(),attemptedIds)
         const nextSession: SessionState = { ...session, session: adapted, inBuffer: session.index >= adapted.slots.length && session.buffer.length > 0 }
         await flushOperation(repository,journal,{session:nextSession})
         setData({...data,session:nextSession})
@@ -121,5 +128,5 @@ export function useLearning(user: AppUser, repository: LearningRepository, journ
     } catch { setError('Nie udało się zapisać ustawień. Spróbuj ponownie.'); throw new Error('Zapis ustawień nie powiódł się.') }
     finally { lock.current=false; setBusy(false) }
   }
-  return { data, loading: !data || loadedDay !== day, settings, session, queue, nextQueue, currentId: session ? currentCardId(session) : null, day, busy, error, load, begin, beginNext, answer, saveVisit, saveHard, setStar, restoreVisit, updateSettings }
+  return { data, loading: !data || loadedDay !== day, settings, session, queue, nextQueue, mainCompleted, currentId: session ? currentCardId(session) : null, day, busy, error, load, begin, beginNext, answer, saveVisit, saveHard, setStar, restoreVisit, updateSettings }
 }

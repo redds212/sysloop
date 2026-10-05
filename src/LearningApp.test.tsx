@@ -11,18 +11,37 @@ import { grade } from './lib/grading'
 import { applyAnswer, getDefaultEntry } from './lib/srs'
 
 afterEach(()=>{cleanup();localStorage.clear()})
-function setup(exhausted:boolean) {
+function setup(exhausted:boolean,missed=false) {
   const data=previewData(),card=data.cards[0]
   if(exhausted)data.cards=[card]
   data.session=startSession(generateDailySession([card],{}, {...previewUser,dailyTarget:1}))
   data.session.index=1
-  data.attempts=[grade(card,[],false,'main')]
-  data.store={[card.id]:applyAnswer(getDefaultEntry(),true)}
+  data.attempts=[grade(card,missed?[card.lines[0].key]:[],false,'main')]
+  data.store=missed?{}:{[card.id]:applyAnswer(getDefaultEntry(),true)}
+  if(missed){data.session.buffer=[card.id];data.session.inBuffer=true;data.session.correctionLines={[card.id]:[card.lines[0].key]}}
   localStorage.setItem('sysloop:preview:data',JSON.stringify(data))
   const repository=previewRepository(localStorage)
   render(<LearningApp user={previewUser} repository={repository} journal={browserJournal(previewUser,localStorage)} onLogout={()=>{}}/>)
   return repository
 }
+it('nowa sesja jest obok poprawek po pierwszym przejściu i zachowuje odłożone błędy',async()=>{
+  const repo=setup(false,true),previous=repo.inspect()
+  const next=await screen.findByRole('button',{name:'Nowa sesja (4) →'})
+  expect(screen.getByRole('button',{name:'Wznów poprawki (0 / 1) →'}).parentElement).toBe(next.parentElement)
+  fireEvent.click(next)
+  await screen.findByText('Dodatkowa sesja')
+  expect(screen.queryByRole('button',{name:/Nowa sesja/})).toBeNull()
+  expect(repo.inspect().session!.buffer).toEqual(previous.session!.buffer)
+  expect(repo.inspect().session!.inBuffer).toBe(false)
+  expect(repo.inspect().store).toEqual(previous.store)
+  expect(repo.inspect().attempts).toEqual(previous.attempts)
+})
+it('po wyczerpaniu puli można ćwiczyć dodatkowo bez utraty oczekujących poprawek',async()=>{
+  const repo=setup(true,true),before=repo.inspect()
+  fireEvent.click(await screen.findByRole('button',{name:'Ćwicz dalej bez zmiany planu'}))
+  await screen.findByText('Dodatkowe ćwiczenie · bez zmiany planu')
+  expect(repo.inspect().session).toEqual(before.session)
+})
 it('udostępnia kolejną sesję w panelu i po zakończeniu, a potem ćwiczenie bez zmiany planu',async()=>{
   const repo=setup(false)
   fireEvent.click(await screen.findByRole('button',{name:'Kolejna sesja (4) →'}))
