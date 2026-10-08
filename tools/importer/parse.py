@@ -9,8 +9,8 @@ from .layout import group_rows, strip_noise, split_cells, cell_text
 from .auction import alternatives, auction_key, header_calls, leading_call, normalize, parse_stub, stub_cells, UNKNOWN_LABEL, CALL_PATTERN
 
 SECTION = re.compile(r'^(?:LICYTACJA|DALSZA\s+LICYTACJA|KONTYNUACJA|KONTRA\s+NA)\b')
-PROSE = re.compile(r'^(?:OPIS\b|UWAGI\s+OG[ÓO]LNE)')
-TITLE = re.compile(r'^(?:OTWARCIE\s+[1-7]|OBRONA\s+(?:vs|przeciwko|VS)|WEJ[ŚS]CIA\s+DWUKOLOROWE|LICYTACJA W OBRONIE)')
+PROSE = re.compile(r'^(?:OPIS\b|UWAGI\s+OG[ÓO]LNE|W przypadku gdy\b)')
+TITLE = re.compile(r'^(?:OTWARCIE\s+[1-7]|OBRONA\s+(?:vs|przeciwko|VS)|WEJ[ŚS]CIA\s+DWUKOLOROWE|WEJ[ŚS](?:CIE|[NP]CIE)\b|INTERWENCJA PO PASIE\b|LICYTACJA W OBRONIE)')
 NOTE = re.compile(r'^(?:UWAGA\b|UWAGI\b|TAK JAK\b|SCHEMAT\b|DALSZA LICYTACJA JAK\b)', re.I)
 FLAGS = ('line_count_mismatch','ambiguous_layout','relative_stub','auction_from_header','unknown_auction',
          'duplicate_key','wrapped_line','unknown_token','empty_meaning','suspicious_length','qualifier_guess','verifier_uncertain')

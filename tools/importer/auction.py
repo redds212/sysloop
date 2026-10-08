@@ -73,7 +73,9 @@ def leading_call(text):
 
 
 def header_calls(text):
-    matches = list(ANY_CALL.finditer(text))
+    # A length comparison belongs to the preceding call's qualifier, not the auction.
+    matches = [match for match in ANY_CALL.finditer(text)
+               if not re.search(r'[<>≤≥]\s*$', text[:match.start()])]
     calls, flags = [], []
     for i, match in enumerate(matches):
         raw = match.group()
@@ -98,9 +100,11 @@ def stub_cells(row):
             continue
         part = leading_call(text)
         if not part:
-            if parsed and parsed[-1][1] == '?':
-                col, raw, tail, x = parsed[-1]
-                parsed[-1] = (col, raw, (tail + ' ' + text).strip(), x)
+            last_filled = next((n for n in range(len(parsed) - 1, -1, -1)
+                                if parsed[n][1]), None)
+            if last_filled is not None and parsed[last_filled][1] == '?':
+                col, raw, tail, x = parsed[last_filled]
+                parsed[last_filled] = (col, raw, (tail + ' ' + text).strip(), x)
                 continue
             return None
         raw, tail = part

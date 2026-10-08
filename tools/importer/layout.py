@@ -56,10 +56,10 @@ def strip_noise(pages):
     kept, removed = [], []
     for rows, height in pages:
         for i, row in enumerate(rows):
-            header = i < 2 and row.y < height * .25 and (
+            header = i < 2 and row.y < height * .25 and not row.text.isupper() and (
                 re.search(r"licytacja (jednostronna|dwustronna|obronna)", row.text, re.I)
                 or (top_counts[row.text] > 2 and not row.text.isupper()
-                    and row.text.startswith(('Otwarcie ', 'Obrona ', 'Wejścia '))))
+                    and row.text.startswith(('Otwarcie ', 'Obrona ', 'Wejścia ', 'Wejście '))))
             footer = i == len(rows) - 1 and row.text.isdigit() and row.y > height * .75
             (removed if header or footer else kept).append(row)
     return kept, removed

@@ -73,6 +73,17 @@ def test_hazard_page_header_and_footer_removed_midblock():
     assert len(kept) == 2 and len(noise) == 4
 
 
+def test_repeated_singular_overcall_header_does_not_enter_continued_meaning():
+    pages = [([row('Wejście testowe - materiał ćwiczeniowy', 30, page),
+               table_row('4♦', 'wymyślone znaczenie', 100, page),
+               row('WEJŚCIE TESTOWE', 160, page),
+               row(str(page), 810, page)], 842) for page in (1, 2, 3)]
+    kept, noise = strip_noise(pages)
+    assert len(noise) == 6
+    assert [r.text for r in kept].count('WEJŚCIE TESTOWE') == 3
+    assert not any(r.text.startswith('Wejście testowe') for r in kept)
+
+
 def test_mixed_font_tops_keep_symbols_in_their_meaning_row():
     source = [word for r in root_rows() for word in r.words] + [
         Word(70, 60, 90, 72, '4♦'), Word(115, 60, 120, 72, '-'),
@@ -264,6 +275,36 @@ def test_separate_call_annotation_on_stub_row():
     assert 'unknown_auction' not in flags
 
 
+@pytest.mark.parametrize('qualifier', ['<5♠', '< 5♠', '≥ 5♠'])
+def test_length_comparison_in_header_is_not_an_extra_bid(qualifier):
+    calls, _ = header_calls('LICYTACJA (3♦) – 3♥ – (KTR) ' + qualifier)
+    assert len(calls) == 3
+    assert calls[-1]['alts'] == ['X']
+    assert calls[-1]['qualifier'] == qualifier
+
+
+@pytest.mark.parametrize('title', ['WEJŚCIE', 'WEJSNCIE', 'WEJSPCIE'])
+def test_overcall_title_and_conditional_prose_do_not_leak_into_previous_card(title):
+    result = parse(root_rows() + [table_row('4♦', 'pierwszy wariant', 80),
+        row(title + ' 4♥', 130), row('OPIS INTERWENCJI', 150),
+        row('Wymyślony opis kolejnego działu.', 170),
+        row('(4♦) - 4♥ - (pas) - ?', 200),
+        table_row('4♠', 'drugi wariant', 230),
+        row('W przypadku gdy odzywka jest testowa', 280),
+        row('Oddzielna wymyślona uwaga.', 300)])
+    assert [len(c['lines']) for c in result['cards']] == [1, 1]
+    assert all(not c['notes'] for c in result['cards'])
+    assert any('Oddzielna wymyślona uwaga.' in n['body'] for n in result['category']['notes'])
+
+
+def test_competitive_section_heading_at_top_of_page_is_not_running_noise():
+    heading = row('LICYTACJA DWUSTRONNA', 70)
+    running = row('Otwarcie fikcyjne - licytacja dwustronna', 20)
+    kept, removed = strip_noise([([running, heading], 800)])
+    assert heading in kept
+    assert running in removed
+
+
 def test_annotation_after_question_is_qualifier_not_context():
     calls,flags,context,_ = parse_stub([row('(3NT) - X - (pass/xx) - ? pass/xx = F')])
     assert calls[-1]['qualifier'] == 'F' and not context
@@ -275,6 +316,31 @@ def test_prose_after_question_separator_and_unknown_named_call():
     assert r['cards'][0]['context'] == 'warunek fikcyjny'
     assert r['cards'][0]['lines'][0]['label'] == 'inne'
     assert 'unknown_token' in r['cards'][0]['reviewFlags']
+
+
+def test_stub_note_after_empty_seat_does_not_swallow_next_position():
+    def seat_row(cells, y):
+        words = []
+        for col, text in enumerate(cells):
+            x = 65 + col * 80
+            words.append(Word(x, y, x + 30, y + 10, text))
+            words.append(Word(x + 50, y, x + 55, y + 10, '-'))
+        return Row(1, 0, words)
+    last = seat_row(['(pas)', '?'], 260)
+    last.words += [Word(260, 260, 265, 270, '-'),
+                   Word(380, 260, 490, 270, 'UWAGA FIKCYJNA')]
+    result = parse([
+        seat_row(['(4♣)', '4♦', '(pas)', '?'], 100),
+        table_row('4♥', 'pierwsza wymyślona odpowiedź', 130),
+        seat_row(['(4♣)', '4♦', '(pas)', '4♥'], 220),
+        seat_row(['(pas)', '4♠', '(pas)', '5♣'], 240),
+        last,
+        table_row('5♦', 'druga wymyślona odpowiedź', 290),
+    ])
+    assert len(result['cards']) == 2
+    assert [len(c['lines']) for c in result['cards']] == [1, 1]
+    assert result['cards'][1]['auctionKey'] == '(4C) 4D (P) 4H (P) 4S (P) 5C (P)'
+    assert result['stats']['unaccountedCallLines'] == 0
 
 
 def test_leading_passes_use_x_positions_not_first_filled_cell():
