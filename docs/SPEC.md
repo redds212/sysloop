@@ -265,6 +265,18 @@ Owner UI clarification (2026-09-23): entering non-whitespace text automatically 
 - At zero: auto-reveal, marking disabled, message **Czas minął — zaliczone jako błąd**, button **Dalej** → fail with `timed_out = true`, `missed_line_keys = null`.
 - Last 10 seconds in amber (BridgeLoop `DealTimer`).
 
+### 6.3.1 Pomodoro — 15 minutes of study / 3 minutes of rest
+
+Owner extension (2026-10-31): add a Pomodoro mode with **15 minutes of ordinary learning with saved progress**, followed by **3 minutes of rest**.
+
+- Start with **🍅 15 min** beside the start/resume/next-session action in the daily panel, or in the active session bar. A compact countdown stays in the top bar on mobile and desktop.
+- Use the existing daily queue, grading, write-through persistence and SRS rules. Completed batches, including corrections, automatically continue into an eligible additional batch while focus time remains. Do not change the daily target, repeat today's cards or bring future reviews forward. If today's eligible pool is exhausted, begin the break early.
+- At 15 minutes, let the user finish the current card; elapsed Pomodoro time never reveals, grades or fails it. Start the full 3-minute break after its grade is successfully saved. A failed write leaves the card available for retry.
+- No card is mounted during the break. After 3 minutes, **Kolejne 15 min** explicitly resumes learning if eligible cards remain; another cycle never starts unattended.
+- **Wyłącz pomodoro** removes only the focus timer while studying. Ending a break returns to the panel. Navigating away from daily study or logging out ends Pomodoro; the ordinary session/progress remain saved.
+- Restore the timer after reload in the same tab, scoped to the signed-in user. Store only phase/deadline metadata in session storage; do not add card content or answers. Absolute deadlines catch up after device/tab sleep. No backend migration is needed.
+- The existing per-card timer remains independent, with its original limit and timeout grading. Its settings label is **Limit czasu na kartę** to distinguish it from Pomodoro.
+
 ### 6.4 SRS (per user × card)
 
 Copy BridgeLoop `src/lib/srs.ts` at commit `015977e` (or later), replacing deal ids with card ids:

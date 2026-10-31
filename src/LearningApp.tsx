@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { AppUser } from './types'
 import type { Journal, LearningRepository } from './lib/learningRepository'
 import { normalizeEntry } from './lib/srs'
@@ -16,16 +16,31 @@ import { HardPractice } from './components/HardPractice'
 import { previousMissedKeys } from './lib/difficult'
 import { correctionCard } from './lib/sessionState'
 import { Modal } from './components/Modal'
+import { usePomodoro } from './hooks/usePomodoro'
+import { PomodoroBreak, PomodoroStart, PomodoroStatus } from './components/Pomodoro'
 
 type View={kind:'hardPractice';ids:string[];visit:number;revisionTraining?:boolean;extraPractice?:boolean}|{kind:'home'|'session'|'settings'|'hard'}|{kind:'practice'|'read'|'notes';id:string;visit:number}
 export default function LearningApp({user,repository,journal,onLogout,onAdmin,account,preview=false}: {user:AppUser;repository:LearningRepository;journal:Journal;onLogout:()=>void;onAdmin?:()=>void;account?:ReactNode;preview?:boolean}) {
   const learning=useLearning(user,repository,journal)
-  const [view,setView]=useState<View>({kind:'home'}),[drawer,setDrawer]=useState(false),[front,setFront]=useState(false)
+  const pomodoro=usePomodoro(user.id)
+  const [view,setView]=useState<View>(()=>({kind:pomodoro.state.phase==='idle'?'home':'session'})),[drawer,setDrawer]=useState(false),[front,setFront]=useState(pomodoro.state.phase==='focus'||pomodoro.state.phase==='finishing')
+  const changingBatch=useRef(false)
+  const resting=pomodoro.state.phase==='break'||pomodoro.state.phase==='ready'
   const revealed=useCallback(()=>setFront(false),[])
-  const navigate=(next:View)=>{if(learning.busy||learning.error)return;setView(next);setDrawer(false);setFront(next.kind==='practice'||next.kind==='session'||next.kind==='hardPractice')}
+  const navigate=(next:View)=>{if(learning.busy||learning.error)return;pomodoro.stop();setView(next);setDrawer(false);setFront(next.kind==='practice'||next.kind==='session'||next.kind==='hardPractice')}
   const open=(kind:'practice'|'read'|'notes',id:string)=>{if(view.kind===kind&&'id'in view&&view.id===id){setDrawer(false);return}navigate({kind,id,visit:Date.now()})}
   const {data,session,queue,currentId,busy,settings}=learning
-  if(!data||learning.loading)return <div className="loading-page"><div className="wordmark">Sys<span>Loop</span></div><p role={learning.error?'alert':'status'}>{learning.error||'Wczytywanie Twojego systemu…'}</p>{learning.error&&<button className="primary" onClick={()=>void learning.load()}>Spróbuj ponownie</button>}<button className="text-button" onClick={onLogout}>Wyloguj</button></div>
+  useEffect(()=>{
+    if(!data||learning.loading||busy||learning.error||view.kind!=='session'||currentId||changingBatch.current)return
+    if(pomodoro.state.phase==='finishing'){pomodoro.takeBreak();return}
+    if(pomodoro.state.phase!=='focus')return
+    // Completed batches continue under the existing daily-session rules.
+    // Exhausting today's pool ends focus early; future reviews are never advanced.
+    if(!session||!learning.nextQueue?.slots.length){pomodoro.takeBreak();return}
+    changingBatch.current=true
+    void learning.beginNext().then(started=>{if(started)setFront(true)}).catch(()=>{/* The hook displays the write error. */}).finally(()=>{changingBatch.current=false})
+  },[data,learning,busy,view.kind,currentId,pomodoro,session])
+  if(!data||learning.loading)return <div className="loading-page"><div className="wordmark">Sys<span>Loop</span></div><p role={learning.error?'alert':'status'}>{learning.error||'Wczytywanie Twojego systemu…'}</p>{learning.error&&<button className="primary" onClick={()=>void learning.load()}>Spróbuj ponownie</button>}<button className="text-button" onClick={()=>{pomodoro.stop();onLogout()}}>Wyloguj</button></div>
   const cardId=view.kind==='session'?currentId:'id'in view&&view.kind!=='notes'?view.id:null
   const card=data.cards.find(c=>c.id===cardId)
   const corrected=card&&session?correctionCard(card,session):null
@@ -42,6 +57,19 @@ export default function LearningApp({user,repository,journal,onLogout,onAdmin,ac
   const resumeLabel=session?.inBuffer?`Wznów poprawki (${session.bufferIndex} / ${session.buffer.length})`:`Wznów sesję (${session?.index??0} / ${session?.session.slots.length??0})`
   async function start() {if(busy||learning.error)return;try{await learning.begin();setView({kind:'session'});setDrawer(false);setFront(true)}catch{/* The hook displays the write error. */}}
   async function startNext() {if(busy||learning.error)return;try{if(await learning.beginNext()){setView({kind:'session'});setDrawer(false);setFront(true)}}catch{/* The hook displays the write error. */}}
+  const hasPomodoroCards=!!(currentId||(!session&&queue?.slots.length)||(completed&&learning.nextQueue?.slots.length))
+  async function startPomodoro() {
+    if(busy||learning.error||!hasPomodoroCards)return
+    try {
+      if(completed){if(!await learning.beginNext())return}else await learning.begin()
+      pomodoro.begin();setView({kind:'session'});setDrawer(false);setFront(true)
+    } catch {/* The hook displays the write error; the timer has not started. */}
+  }
+  function stopPomodoro() {
+    pomodoro.stop()
+    if(resting){setView({kind:'home'});setFront(false)}
+  }
+  function logout() {pomodoro.stop();onLogout()}
   function extraPractice() {
     const ids=data!.cards.filter(c=>c.status==='active').map(c=>c.id)
     for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]]}
@@ -49,37 +77,41 @@ export default function LearningApp({user,repository,journal,onLogout,onAdmin,ac
   }
   const continueActions=completed&&<div className="continue-session">
     <p className="muted">Dziś oceniono {todayCount} pozycji w sesjach. Cel dzienny: {settings.dailyTarget}.</p>
-    {learning.nextQueue?.slots.length?<><p className="muted">Możesz zrobić kolejną porcję z zapisem postępu: {learning.nextQueue.retryCount} poprawek, {learning.nextQueue.reviewCount} powtórek, {learning.nextQueue.newCount} nowych.</p><button className="primary" disabled={busy||!!learning.error} onClick={()=>void startNext()}>Kolejna sesja ({learning.nextQueue.slots.length}) →</button></>:<><p className="muted">Nie ma już nowych ani należnych kart na dziś. Możesz dalej ćwiczyć bez zmiany terminów powtórek.</p>{practiceAvailable&&data.cards.length>0&&<button className="primary" disabled={busy||!!learning.error} onClick={extraPractice}>Ćwicz dalej bez zmiany planu</button>}</>}
+    {learning.nextQueue?.slots.length?<><p className="muted">Możesz zrobić kolejną porcję z zapisem postępu: {learning.nextQueue.retryCount} poprawek, {learning.nextQueue.reviewCount} powtórek, {learning.nextQueue.newCount} nowych.</p><div className="daily-actions"><button className="primary" disabled={busy||!!learning.error} onClick={()=>void startNext()}>Kolejna sesja ({learning.nextQueue.slots.length}) →</button>{pomodoro.state.phase==='idle'&&<PomodoroStart disabled={busy||!!learning.error} onStart={()=>void startPomodoro()}/>}</div></>:<><p className="muted">Nie ma już nowych ani należnych kart na dziś. Możesz dalej ćwiczyć bez zmiany terminów powtórek.</p>{practiceAvailable&&data.cards.length>0&&<button className="primary" disabled={busy||!!learning.error} onClick={extraPractice}>Ćwicz dalej bez zmiany planu</button>}</>}
   </div>
-  const sidebar=<Sidebar onHard={practiceAvailable?()=>navigate({kind:'hard'}):undefined} user={user} cards={data.cards} categories={data.categories} store={data.store} recommended={remaining} locked={front} onPractice={id=>open('practice',id)} onRead={id=>open('read',id)} onNotes={id=>open('notes',id)} onHome={()=>navigate({kind:'home'})} onSettings={()=>navigate({kind:'settings'})} onLogout={onLogout} onAdmin={onAdmin?()=>{if(!learning.busy&&!learning.error)onAdmin()}:undefined}/>
+  const sidebar=<Sidebar onHard={practiceAvailable?()=>navigate({kind:'hard'}):undefined} user={user} cards={data.cards} categories={data.categories} store={data.store} recommended={remaining} locked={front&&!resting} onPractice={id=>open('practice',id)} onRead={id=>open('read',id)} onNotes={id=>open('notes',id)} onHome={()=>navigate({kind:'home'})} onSettings={()=>navigate({kind:'settings'})} onLogout={logout} onAdmin={onAdmin?()=>{if(!learning.busy&&!learning.error){pomodoro.stop();onAdmin()}}:undefined}/>
   return <div className="app-shell"><aside className="desktop-sidebar">{sidebar}</aside><div className="app-body">
-    <header className="topbar"><button className="icon-button mobile-menu" onClick={()=>setDrawer(true)} aria-label="Otwórz menu">☰</button><span className="topbar-label">{view.kind==='session'?'Codzienna praktyka':view.kind==='practice'?'Ćwiczenie swobodne':view.kind==='read'?'Biblioteka':'System RJ-WG'}</span><span className="today-label">{new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'long'})}</span></header>
+    <header className="topbar"><button className="icon-button mobile-menu" onClick={()=>setDrawer(true)} aria-label="Otwórz menu">☰</button><span className="topbar-label">{view.kind==='session'?'Codzienna praktyka':view.kind==='practice'?'Ćwiczenie swobodne':view.kind==='read'?'Biblioteka':'System RJ-WG'}</span>{pomodoro.state.phase==='idle'?<span className="today-label">{new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'long'})}</span>:<PomodoroStatus state={pomodoro.state} remaining={pomodoro.remaining} onStop={stopPomodoro}/>}</header>
     {preview&&<div className="preview-banner">Podgląd · wymyślone karty · zapis tylko w tej przeglądarce</div>}
     <main className="main-content">
+      {resting?<><PomodoroBreak remaining={pomodoro.remaining} ready={pomodoro.state.phase==='ready'} hasNext={hasPomodoroCards} busy={busy||!!learning.error} onContinue={()=>void startPomodoro()} onStop={stopPomodoro}/>{learning.error&&<p className="error-note" role="alert">{learning.error}<button className="text-button" disabled={busy} onClick={()=>void learning.load()}>Ponów zapis i wczytaj</button></p>}</>:<>
+      {pomodoro.state.phase==='finishing'&&<p className="pomodoro-finish" role="status">15 minut za Tobą. Dokończ i oceń tę kartę — potem 3 minuty przerwy.</p>}
       {!practiceAvailable&&<p className="muted" role="status">Nowe tryby ćwiczeń czekają na aktualizację bazy danych przez administratora. Dotychczasowa nauka działa.</p>}
       {card&&<CardTools card={card} category={category} repository={repository} starred={stars.includes(card.id)} busy={busy} onStar={practiceAvailable?()=>learning.setStar(card.id,!stars.includes(card.id)):undefined}/>}
       {view.kind==='hard'&&practiceAvailable&&<DifficultCards repository={repository} onStartChanges={ids=>navigate({kind:'hardPractice',ids,visit:Date.now(),revisionTraining:true})} cards={data.cards} categories={data.categories} attempts={data.attempts} stars={stars} busy={busy} onStar={learning.setStar} onRead={id=>open('read',id)} onStart={ids=>navigate({kind:'hardPractice',ids,visit:Date.now()})}/>}
       {view.kind==='hardPractice'&&practiceAvailable&&<HardPractice extraPractice={view.extraPractice} revisionTraining={view.revisionTraining} key={view.visit} cards={view.ids.flatMap(id=>data.cards.filter(c=>c.id===id))} categories={data.categories} attempts={data.attempts} stars={stars} onStar={learning.setStar} busy={busy} repository={repository} save={learning.saveHard} onFront={()=>setFront(true)} onRevealed={revealed} onFinish={()=>navigate({kind:view.extraPractice?'home':'hard'})}/>}
 
-      {learning.error&&<p role="alert" className="error-note">{learning.error}<button className="text-button" disabled={busy} onClick={()=>{void learning.load().then(ok=>{if(ok){setView({kind:'home'});setFront(false)}})}}>Ponów zapis i wczytaj</button></p>}
+      {learning.error&&<p role="alert" className="error-note">{learning.error}<button className="text-button" disabled={busy} onClick={()=>{void learning.load().then(ok=>{if(ok){pomodoro.stop();setView({kind:'home'});setFront(false)}})}}>Ponów zapis i wczytaj</button></p>}
       {view.kind!=='session'&&session&&currentId&&<button className="resume-strip" disabled={busy} onClick={()=>void start()}>{resumeLabel}<span>→</span></button>}
       {(view.kind==='home'||view.kind==='settings')&&<>
         <p className="eyebrow">Mały rytuał, pewniejsza licytacja</p><h1 className="welcome-title">{completed?'Dobra robota!':`Cześć, ${user.username}.`}</h1><p className="welcome-subtitle">{completed?'Sesja ukończona. Masz ochotę na kolejną porcję?':'Kilka pozycji dziennie. Coraz mniej znaków zapytania przy stole.'}</p>
         <section className="daily-panel panel"><div><span className="eyebrow">Dzisiejsza sesja</span><h2>{completed?'Dobra robota.':session&&currentId?'Wróć tam, gdzie skończyłeś.':'Zrób miejsce na pewność.'}</h2><p className="muted">{!data.cards.length?'Karty pojawią się tutaj po weryfikacji i zatwierdzeniu importu.':completed?`${session.session.slots.length} pozycji · ${session.buffer.length} powtórek w poprawkach.`:'Najpierw poprawki i powtórki. Potem nowe pozycje.'}</p></div>
           <div className="daily-count"><strong>{completed?'✓':session?.session.slots.length??queue?.slots.length??0}</strong><span>{completed?'sesja ukończona':'pozycji na dziś'}</span></div>
           {continueActions}
-          {!completed&&<><div className="queue-split"><span><i className="status-dot learning"/>{queue?.retryCount??0} poprawek</span><span><i className="status-dot review"/>{queue?.reviewCount??0} powtórek</span><span><i className="status-dot new"/>{queue?.newCount??0} nowych</span></div><div className="daily-actions"><button className="primary" disabled={busy||!remaining.length} onClick={()=>void start()}>{session&&currentId?resumeLabel:`Rozpocznij sesję (${queue?.slots.length??0})`} →</button>
+          {!completed&&<><div className="queue-split"><span><i className="status-dot learning"/>{queue?.retryCount??0} poprawek</span><span><i className="status-dot review"/>{queue?.reviewCount??0} powtórek</span><span><i className="status-dot new"/>{queue?.newCount??0} nowych</span></div><div className="daily-actions"><button className="primary" disabled={busy||!remaining.length} onClick={()=>void start()}>{session&&currentId?resumeLabel:`Rozpocznij sesję (${queue?.slots.length??0})`} →</button>{pomodoro.state.phase==='idle'&&<PomodoroStart disabled={busy||!!learning.error||!hasPomodoroCards} onStart={()=>void startPomodoro()}/>}
             {pendingCorrections&&(learning.nextQueue?.slots.length?<button className="secondary" disabled={busy||!!learning.error} onClick={()=>void startNext()}>Nowa sesja ({learning.nextQueue.slots.length}) →</button>:practiceAvailable&&data.cards.length>0&&<button className="secondary" disabled={busy||!!learning.error} onClick={extraPractice}>Ćwicz dalej bez zmiany planu</button>)}
           </div>{pendingCorrections&&<p className="deferred-corrections muted">Pierwsze przejście zakończone. {learning.nextQueue?.slots.length?'Możesz zacząć nową sesję. Niewykonane poprawki zachowamy na jej koniec.':'Nie ma już nowych ani należnych kart na dziś. Dodatkowe ćwiczenie pozostawi poprawki do późniejszego wykonania.'}</p>}</>}
+          {pomodoro.state.phase==='idle'&&hasPomodoroCards&&<p className="pomodoro-hint muted">🍅 Pomodoro: 15 min nauki / 3 min przerwy · ze zwykłym zapisem postępów.</p>}
         </section>
         <div className="guide-panels"><section className="panel"><span className="step-number">01</span><h2>Przypomnij sobie</h2><p className="muted">Zobacz licytację i odzywki. Ich znaczenia odtwórz w pamięci.</p></section><section className="panel"><span className="step-number">02</span><h2>Sprawdź i zaznacz</h2><p className="muted">Odsłoń odpowiedzi. Zaznacz wszystko, co wymaga powtórki.</p></section></div>
         {view.kind==='settings'&&<><LearningSettings practiceAvailable={practiceAvailable} key={`${settings.dailyTarget}:${settings.mode}:${settings.timedMode}:${settings.correctionMode}`} settings={settings} save={learning.updateSettings}/>{account}</>}
       </>}
-      {view.kind==='session'&&card&&session&&<><div className="session-bar"><span>{session.inBuffer?'Poprawki':additional?'Dodatkowa sesja':'Sesja dzienna'}</span><strong>{session.inBuffer?session.bufferIndex:session.index} / {session.inBuffer?session.buffer.length:session.session.slots.length}</strong><button className="text-button" disabled={busy} onClick={()=>navigate({kind:'home'})}>Wstrzymaj</button><progress value={session.inBuffer?session.bufferIndex:session.index} max={session.inBuffer?session.buffer.length:session.session.slots.length}/></div><CardView attempts={data.attempts} key={`${learning.day}:${session.index}:${session.bufferIndex}:${card.id}`} card={corrected?.card??card} scope={corrected?.scope} previousMissed={previousMissed} category={category} baseline={normalizeEntry(data.store[card.id])} timed={!!settings.timedMode} phase={session.inBuffer?'buffer':'main'} repository={repository} onRevealed={revealed} onRate={async a=>{setFront(await learning.answer(a))}}/></>}
+      {view.kind==='session'&&card&&session&&<><div className="session-bar"><span>{session.inBuffer?'Poprawki':additional?'Dodatkowa sesja':'Sesja dzienna'}</span><strong>{session.inBuffer?session.bufferIndex:session.index} / {session.inBuffer?session.buffer.length:session.session.slots.length}</strong>{pomodoro.state.phase==='idle'&&<PomodoroStart disabled={busy||!!learning.error} onStart={pomodoro.begin}/>}<button className="text-button" disabled={busy} onClick={()=>navigate({kind:'home'})}>Wstrzymaj</button><progress value={session.inBuffer?session.bufferIndex:session.index} max={session.inBuffer?session.buffer.length:session.session.slots.length}/></div><CardView attempts={data.attempts} key={`${learning.day}:${session.index}:${session.bufferIndex}:${card.id}`} card={corrected?.card??card} scope={corrected?.scope} previousMissed={previousMissed} category={category} baseline={normalizeEntry(data.store[card.id])} timed={!!settings.timedMode} phase={session.inBuffer?'buffer':'main'} repository={repository} onRevealed={revealed} onRate={async a=>{setFront(await learning.answer(a));pomodoro.finishCard()}}/></>}
       {view.kind==='session'&&!card&&<section className="panel result-panel"><span className="result-symbol">✓</span><h1>{completed?'Sesja zakończona.':'Nowy dzień, nowa sesja.'}</h1><p className="muted">{completed?`Zakończono ${session?.session.slots.length??0} pozycji oraz ${session?.buffer.length??0} poprawek.`:'Wczorajsza kolejka wygasła. Odpowiedzi zostały zapisane.'}</p>{continueActions}<button className={completed?"text-button":"primary"} onClick={()=>navigate({kind:'home'})}>Wróć do panelu</button></section>}
       {view.kind==='practice'&&card&&<FreePractice attempts={data.attempts} previousMissed={previousMissed} key={`${view.id}:${view.visit}`} card={card} category={category} entry={normalizeEntry(data.store[card.id])} timed={!!settings.timedMode} repository={repository} save={learning.saveVisit} restore={learning.restoreVisit} onRevealed={revealed} onRepeat={()=>setFront(true)} onRead={()=>open('read',card.id)} onHome={()=>navigate({kind:'home'})}/>}
       {view.kind==='read'&&card&&<ReadView card={card} cards={data.cards} category={category} onRead={id=>open('read',id)} onPractice={id=>open('practice',id)} repository={repository}/>}
       {view.kind==='notes'&&data.categories.filter(c=>c.slug===view.id).map(c=><NotesView key={c.slug} category={c}/>)}
+      </>}
     </main>
   </div>{drawer&&<Modal title="System RJ-WG" onClose={()=>setDrawer(false)}>{sidebar}</Modal>}</div>
 }
