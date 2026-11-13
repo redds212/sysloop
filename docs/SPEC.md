@@ -267,6 +267,8 @@ Owner UI clarification (2026-09-23): entering non-whitespace text automatically 
 
 ### 6.3.1 Pomodoro — 15 minutes of study / 3 minutes of rest
 
+Owner extension (2026-11-13): configurable **15 / 20 / 25 minutes of study** and **1 / 3 / 5 minutes of rest**, default **15 / 3**. Keep the existing button footprint: a split **🍅 15/3 | ▾** button starts immediately on its main side and opens a floating settings panel from the arrow. The panel shows two independent single-choice rows, saves immediately, and closes on outside interaction or Escape. While running, the existing tomato beside the countdown opens the same panel. Preserve keyboard navigation and 44 px touch targets; the panel must stay inside the viewport without shifting the page. Preferences are stored in this browser's local storage, scoped to the signed-in user. Capture both durations at the start of a cycle; changes during study or rest apply only to the next explicitly started cycle. Persist that captured configuration with the current phase/deadline in session storage. Legacy timers without configuration retain 15/3. All labels follow the selected/current durations. Grading, SRS and write-through progress remain unchanged; no migration is needed. The fixed durations and button labels below describe the defaults.
+
 Owner extension (2026-10-31): add a Pomodoro mode with **15 minutes of ordinary learning with saved progress**, followed by **3 minutes of rest**.
 
 - Start with **🍅 15 min** beside the start/resume/next-session action in the daily panel, or in the active session bar. A compact countdown stays in the top bar on mobile and desktop.

@@ -3,7 +3,7 @@ import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { usePomodoro } from './usePomodoro'
 
-afterEach(() => { cleanup(); sessionStorage.clear(); vi.useRealTimers() })
+afterEach(() => { cleanup(); sessionStorage.clear(); localStorage.clear(); vi.useRealTimers() })
 
 it('restores a running clock after reload and stores only timer metadata', () => {
   vi.useFakeTimers()
@@ -14,7 +14,7 @@ it('restores a running clock after reload and stores only timer metadata', () =>
   first.unmount()
   const second = renderHook(() => usePomodoro('invented-user'))
   expect(second.result.current.remaining).toBe(840)
-  expect(Object.keys(JSON.parse(sessionStorage.getItem('sysloop:pomodoro:invented-user')!)).sort()).toEqual(['deadline', 'phase'])
+  expect(Object.keys(JSON.parse(sessionStorage.getItem('sysloop:pomodoro:invented-user')!)).sort()).toEqual(['config', 'deadline', 'phase'])
   act(() => second.result.current.stop())
   expect(second.result.current.state.phase).toBe('idle')
   expect(sessionStorage.getItem('sysloop:pomodoro:invented-user')).toBeNull()
@@ -43,4 +43,26 @@ it('does not restore another user’s clock', () => {
   first.unmount()
   const second = renderHook(() => usePomodoro('invented-second'))
   expect(second.result.current.state.phase).toBe('idle')
+})
+
+it('remembers preferences per user while retaining the running cycle across reloads', () => {
+  vi.useFakeTimers()
+  const first = renderHook(() => usePomodoro('invented-first'))
+  act(() => first.result.current.setConfig({ focusMinutes: 20, breakMinutes: 1 }))
+  act(() => first.result.current.begin())
+  act(() => first.result.current.setConfig({ focusMinutes: 25, breakMinutes: 5 }))
+  expect(first.result.current.remaining).toBe(1200)
+  first.unmount()
+  const resumed = renderHook(() => usePomodoro('invented-first'))
+  expect(resumed.result.current.config).toEqual({ focusMinutes: 25, breakMinutes: 5 })
+  expect(resumed.result.current.remaining).toBe(1200)
+  act(() => resumed.result.current.takeBreak())
+  expect(resumed.result.current.remaining).toBe(60)
+  act(() => resumed.result.current.stop())
+  act(() => resumed.result.current.begin())
+  expect(resumed.result.current.remaining).toBe(1500)
+  resumed.unmount()
+  const other = renderHook(() => usePomodoro('invented-second'))
+  expect(other.result.current.config).toEqual({ focusMinutes: 15, breakMinutes: 3 })
+  expect(other.result.current.state.phase).toBe('idle')
 })

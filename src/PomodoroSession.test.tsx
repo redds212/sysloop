@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import LearningApp from './LearningApp'
 import { previewData, previewUser } from './dev/fixtures'
@@ -34,10 +34,45 @@ async function elapse(milliseconds: number) {
 
 const startName = 'Rozpocznij pomodoro: 15 minut nauki, 3 minuty przerwy'
 
+it('configures the next cycle without changing an active timer or saved grading', async () => {
+  const { repository, app } = await setup(3, 3)
+  await click('Ustawienia pomodoro')
+  fireEvent.click(within(screen.getByRole('group', { name: 'Nauka' })).getByRole('radio', { name: '20' }))
+  fireEvent.click(within(screen.getByRole('group', { name: 'Przerwa' })).getByRole('radio', { name: '1' }))
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Ustawienia pomodoro' }))
+  await click('Rozpocznij pomodoro: 20 minut nauki, 1 minuta przerwy')
+  expect(screen.getByRole('timer', { name: 'Nauka — pozostały czas' }).textContent).toBe('20:00')
+  await click('Ustawienia pomodoro')
+  fireEvent.click(within(screen.getByRole('group', { name: 'Nauka' })).getByRole('radio', { name: '25' }))
+  fireEvent.click(within(screen.getByRole('group', { name: 'Przerwa' })).getByRole('radio', { name: '5' }))
+  fireEvent.pointerDown(document.body)
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(repository.inspect().attempts).toHaveLength(0)
+  cleanup()
+  await act(async () => { render(app()) })
+  expect(screen.getByRole('timer', { name: 'Nauka — pozostały czas' }).textContent).toBe('20:00')
+  await elapse(1200000)
+  expect(screen.getByText(/20 minut za Tobą/)).toBeTruthy()
+  await click('Pokaż')
+  await click('Wszystko dobrze')
+  expect(screen.getByRole('timer', { name: 'Pozostały czas przerwy' }).textContent).toBe('1:00')
+  expect(repository.inspect().attempts).toHaveLength(1)
+  await elapse(60000)
+  await click('Kolejne 25 min →')
+  expect(screen.getByRole('timer', { name: 'Nauka — pozostały czas' }).textContent).toBe('25:00')
+  await elapse(1500000)
+  await click('Pokaż')
+  await click('Wszystko dobrze')
+  expect(screen.getByRole('timer', { name: 'Pozostały czas przerwy' }).textContent).toBe('5:00')
+  expect(repository.inspect().attempts).toHaveLength(2)
+})
+
 it('starts alongside the regular session and continues batches with normal saved progress', async () => {
   const { repository } = await setup()
   const start = screen.getByRole('button', { name: startName })
-  expect(start.parentElement).toBe(screen.getByRole('button', { name: 'Rozpocznij sesję (1) →' }).parentElement)
+  expect(start.closest('.daily-actions')).toBe(screen.getByRole('button', { name: 'Rozpocznij sesję (1) →' }).parentElement)
   await click(startName)
   expect(screen.getByRole('timer', { name: 'Nauka — pozostały czas' }).textContent).toBe('15:00')
   const first = repository.inspect().session!.session.slots[0].cardId

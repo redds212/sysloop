@@ -226,15 +226,32 @@ textarea,select { background:#0b1220; border:1px solid #334155; padding:12px; bo
 .source-viewport { overflow: auto; max-height: 70dvh; }
 .source-toolbar { flex-wrap: wrap; }
 
-.pomodoro-start { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:10px 14px; border:1px solid #e0524d55; border-radius:9px; background:#e0524d0c; color:#f1c5b9; font-size:14px; font-weight:600; white-space:nowrap; }
-.pomodoro-start:hover { background:#e0524d20; border-color:#e0524d99; }
-.pomodoro-start > span:first-child { font-size:21px; }
+.pomodoro-start { display:inline-flex; flex-shrink:0; width:104px; min-height:48px; border:1px solid #e0524d55; border-radius:9px; background:#e0524d0c; color:#f1c5b9; white-space:nowrap; }
+.pomodoro-start-action,.pomodoro-settings-trigger { display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:0; border:0; background:none; color:inherit; }
+.pomodoro-start-action { flex:1; gap:2px; font-size:12px; font-weight:600; border-radius:8px 0 0 8px; font-variant-numeric:tabular-nums; }
+.pomodoro-start-action > span:first-child { font-size:18px; }
+.pomodoro-settings-trigger { width:44px; flex-shrink:0; border-left:1px solid #e0524d33; border-radius:0 8px 8px 0; }
+.pomodoro-start-action:hover,.pomodoro-settings-trigger:hover { background:#e0524d20; }
+.pomodoro-start-action:focus-visible,.pomodoro-settings-trigger:focus-visible { outline:2px solid #80d9bb; outline-offset:2px; }
+.pomodoro-settings-trigger.active { border:0; border-radius:9px; font-size:20px; }
+.pomodoro-settings-panel { position:fixed; z-index:100; width:280px; max-width:calc(100vw - 16px); max-height:calc(100dvh - 16px); overflow:auto; padding:16px; border:1px solid #ffffff24; border-radius:12px; background:#131c2e; color:#e8edf5; box-shadow:0 12px 40px #0008; }
+.pomodoro-settings-title { display:flex; justify-content:space-between; margin:0 0 12px; font-weight:700; }
+.pomodoro-settings-title span { color:#8a97ad; font-size:12px; font-weight:400; }
+.pomodoro-settings-panel fieldset { display:flex; align-items:center; gap:12px; min-width:0; margin:8px 0; padding:0; border:0; }
+.pomodoro-settings-panel legend { float:left; width:62px; padding:0; font-size:13px; line-height:44px; }
+.pomodoro-options { display:flex; flex:1; gap:4px; }
+.pomodoro-options label { position:relative; flex:1; min-width:44px; cursor:pointer; }
+.pomodoro-options input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; }
+.pomodoro-options span { display:grid; place-items:center; min-height:44px; border:1px solid #ffffff17; border-radius:7px; background:#1b2740; font-size:14px; }
+.pomodoro-options input:checked + span { background:#34d39926; border-color:#34d399; color:#80d9bb; font-weight:700; }
+.pomodoro-options input:focus-visible + span { outline:2px solid #80d9bb; outline-offset:2px; }
+.pomodoro-settings-panel > .muted { margin:12px 0 0; font-size:12px; }
 .daily-actions .pomodoro-start { flex:0 0 auto; min-width:104px; }
 .daily-actions:has(.pomodoro-start) > .primary { flex:1 1 170px; min-width:0; }
 .pomodoro-hint { grid-column:1/-1; margin-top:-10px; font-size:12px; }
 .topbar:has(.pomodoro-status) { position:sticky; top:0; z-index:20; background:#0b1220; }
 .topbar:has(.pomodoro-status) .topbar-label { min-width:0; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-.pomodoro-status { display:flex; align-items:center; gap:8px; margin-left:auto; flex-shrink:0; padding-left:10px; border:1px solid #e0524d40; border-radius:10px; background:#e0524d0c; }
+.pomodoro-status { display:flex; align-items:center; gap:2px; margin-left:auto; flex-shrink:0; border:1px solid #e0524d40; border-radius:10px; background:#e0524d0c; }
 .pomodoro-status > span { font-size:20px; }
 .pomodoro-status > div { display:flex; flex-direction:column; min-width:48px; gap:1px; padding:5px 0; }
 .pomodoro-phase { font-size:10px; color:#e7b6a9; }

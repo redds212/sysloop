@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { advancePomodoro, remainingSeconds, restorePomodoro, startBreak, startFocus, type PomodoroState } from '../lib/pomodoro'
+import { advancePomodoro, DEFAULT_POMODORO, remainingSeconds, restorePomodoro, restorePomodoroConfig, startBreak, startFocus, type PomodoroConfig, type PomodoroState } from '../lib/pomodoro'
 
 export function usePomodoro(userId: string) {
   const key = `sysloop:pomodoro:${userId}`
+  const configKey = `sysloop:pomodoro-config:${userId}`
+  const [config, setConfig] = useState<PomodoroConfig>(() => {
+    try { return restorePomodoroConfig(localStorage.getItem(configKey)) } catch { return { ...DEFAULT_POMODORO } }
+  })
   const [clock, setClock] = useState(() => {
     const now = Date.now()
     let state: PomodoroState = { phase: 'idle' }
@@ -10,6 +14,10 @@ export function usePomodoro(userId: string) {
     return { state, now }
   })
   const { state, now } = clock
+
+  useEffect(() => {
+    try { localStorage.setItem(configKey, JSON.stringify(config)) } catch { /* Preferences still work for this visit. */ }
+  }, [configKey, config])
 
   useEffect(() => {
     // Only timer metadata; no card content or answers are stored here.
@@ -37,16 +45,17 @@ export function usePomodoro(userId: string) {
 
   const begin = useCallback(() => {
     const time = Date.now()
-    setClock({ state: startFocus(time), now: time })
-  }, [])
+    setClock({ state: startFocus(time, config), now: time })
+  }, [config])
   const takeBreak = useCallback(() => {
     const time = Date.now()
-    setClock({ state: startBreak(time), now: time })
+    setClock(previous => previous.state.phase === 'focus' || previous.state.phase === 'finishing'
+      ? { state: startBreak(time, previous.state.config), now: time } : previous)
   }, [])
   const finishCard = useCallback(() => {
     const time = Date.now()
-    setClock(previous => advancePomodoro(previous.state, time).phase === 'finishing'
-      ? { state: startBreak(time), now: time }
+    setClock(previous => previous.state.phase !== 'idle' && advancePomodoro(previous.state, time).phase === 'finishing'
+      ? { state: startBreak(time, previous.state.config), now: time }
       : previous)
   }, [])
   const stop = useCallback(() => {
@@ -55,5 +64,5 @@ export function usePomodoro(userId: string) {
     setClock({ state: { phase: 'idle' }, now: Date.now() })
   }, [key])
 
-  return { state, remaining: remainingSeconds(state, now), begin, takeBreak, finishCard, stop }
+  return { state, config, setConfig, remaining: remainingSeconds(state, now), begin, takeBreak, finishCard, stop }
 }
