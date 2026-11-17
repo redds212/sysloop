@@ -82,6 +82,11 @@ summary { cursor:pointer; min-height:44px; padding:12px 0; font-size:12px; }
 .status-dot.learning { background:#e0524d; }.status-dot.review { background:#fbbf24; }.status-dot.mastered { background:#34d399; }
 .sidebar-stats { display:flex; justify-content:space-between; border-top:1px solid #ffffff0c; margin-top:30px; padding-top:18px; gap:12px; }
 .sidebar-stats span { color:#8a97ad; font-size:9px; }.sidebar-stats b { display:block; font:18px 'Space Grotesk',sans-serif; color:#d4deeb; margin-bottom:3px; }
+.sidebar-progress { margin-top:12px; }
+.sidebar-progress-track { height:5px; overflow:hidden; border-radius:999px; background:#ffffff0c; }
+.sidebar-progress-fill { height:100%; border-radius:inherit; background:linear-gradient(90deg,#10b981,#6ee7b7); }
+.sidebar-progress-labels { display:flex; justify-content:space-between; gap:8px; margin-top:6px; color:#8a97ad; font-size:9px; font-variant-numeric:tabular-nums; }
+.sidebar-progress-labels span:nth-child(2) { color:#6ee7b7; }
 .card-breadcrumb { display:flex; flex-direction:column; gap:8px; font-size:11px; color:#34d399; margin-bottom:20px; }
 .position-heading { display:flex; align-items:center; gap:16px; justify-content:space-between; margin-bottom:22px; }.position-heading h1 { font-size:23px; }.position-heading .counter { white-space:nowrap; }
 .auction-panel { background:#131c2e; border:1px solid #ffffff12; border-radius:12px; padding:16px 20px; margin:18px 0; }

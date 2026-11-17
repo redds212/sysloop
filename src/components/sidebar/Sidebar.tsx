@@ -11,6 +11,8 @@ interface Props { user:AppUser; cards:Card[]; categories:Category[]; store:SRSSt
 export function Sidebar({user,cards,categories,store,recommended,locked,onPractice,onRead,onNotes,onHome,onSettings,onLogout,onAdmin,onHard}:Props) {
   const counts={NEW:0,LEARNING:0,REVIEW:0,MASTERED:0}
   for(const card of cards)counts[normalizeEntry(store[card.id]).status]++
+  const masteredPercent=cards.length?counts.MASTERED/cards.length*100:0
+  const masteredLabel=`${masteredPercent.toLocaleString('pl-PL',{maximumFractionDigits:1})}% opanowane`
   return <div className="sidebar-inner"><button className="wordmark" onClick={onHome}>Sys<span>Loop</span></button><p className="sidebar-caption">TWÓJ SYSTEM, W PAMIĘCI</p>
     <div className="profile-row"><span className="avatar">{user.username.slice(0,1).toUpperCase()}</span><span>{user.username}<small>{user.isAdmin?'Administrator':'Partnerstwo'}</small></span><button className="icon-button" onClick={onLogout} aria-label="Wyloguj">↪</button></div>
     <button className="nav-button" onClick={onSettings}>Mój panel <span>↗</span></button>
@@ -29,6 +31,14 @@ export function Sidebar({user,cards,categories,store,recommended,locked,onPracti
         {[...new Set(categoryCards.map(c=>c.section))].map(section=><details key={section} className="section-branch"><summary className="section-title">{section||'Pozycje'}</summary>{categoryCards.filter(c=>c.section===section).map(card=><div key={card.id} className={`tree-position progress-${normalizeEntry(store[card.id]).status.toLowerCase()} progress-step-${normalizeEntry(store[card.id]).consecutiveCorrect}`} title={progressLabel(normalizeEntry(store[card.id]))}><button onClick={()=>onPractice(card.id)}><span className={`status-dot ${normalizeEntry(store[card.id]).status.toLowerCase()}`}/><AuctionView auction={card.auction} compact/>{card.context&&<small>{card.context}</small>}</button>{!locked&&<button className="read-icon" onClick={()=>onRead(card.id)} aria-label="Czytaj pozycję">↗</button>}</div>)}</details>)}
       </details>
     })}</section>)}
-    <footer className="sidebar-stats"><span><b>{counts.NEW}</b>Nowe</span><span><b>{counts.LEARNING+counts.REVIEW}</b>Nauka</span><span><b>{counts.MASTERED}</b>Opanowane</span></footer>
+    <footer>
+      <div className="sidebar-stats"><span><b>{counts.NEW}</b>Nowe</span><span><b>{counts.LEARNING+counts.REVIEW}</b>Nauka</span><span><b>{counts.MASTERED}</b>Opanowane</span></div>
+      <div className="sidebar-progress">
+        <div className="sidebar-progress-track" role="progressbar" aria-label="Opanowanie systemu" aria-valuemin={0} aria-valuemax={100} aria-valuenow={masteredPercent} aria-valuetext={masteredLabel}>
+          <div className="sidebar-progress-fill" style={{width:`${masteredPercent}%`}}/>
+        </div>
+        <div className="sidebar-progress-labels" aria-hidden="true"><span>0%</span><span>{masteredLabel}</span><span>100%</span></div>
+      </div>
+    </footer>
   </div>
 }
